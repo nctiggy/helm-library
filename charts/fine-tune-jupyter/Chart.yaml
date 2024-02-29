@@ -1,0 +1,26 @@
+---
+apiVersion: v2
+appVersion: v4.1.0.6175
+description: Jupyter hub for data science
+name: fine-tune-jupyter
+version: 0.0.1
+kubeVersion: ">=1.26.0-0"
+keywords:
+  - jupyter
+  - intel
+home: https://github.com/nctiggy/helm-library
+icon: https://upload.wikimedia.org/wikipedia/commons/3/38/Jupyter_logo.svg
+sources:
+  - https://github.com/jupyter/docker-stacks/tree/main
+  - https://github.com/k8s-at-home/container-images
+maintainers:
+  - name: nctiggy
+    email: nctiggy@gmail.com
+dependencies:
+  - name: common
+    repository: https://nctiggy.github.io/helm-library
+    version: 4.5.2
+annotations:
+  artifacthub.io/changes: |-
+    - kind: changed
+      description: Upgraded `common` chart dependency to version 4.5.2
