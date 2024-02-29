@@ -29,6 +29,35 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v4.1.0.6175
+    created: "2024-02-28T20:26:30.562674-08:00"
+    dependencies:
+    - name: common
+      repository: https://nctiggy.github.io/helm-library
+      version: 4.5.2
+    description: Jupyter hub for data science
+    digest: a1580da9058840e72651ee124c6c426c207f9e14340884a6cdd01ee3f6f11d51
+    home: https://github.com/nctiggy/helm-library
+    icon: https://upload.wikimedia.org/wikipedia/commons/3/38/Jupyter_logo.svg
+    keywords:
+    - jupyter
+    - intel
+    kubeVersion: '>=1.19.0-0'
+    maintainers:
+    - email: nctiggy@gmail.com
+      name: nctiggy
+    name: fine-tune-jupyter
+    sources:
+    - https://github.com/jupyter/docker-stacks/tree/main
+    - https://github.com/k8s-at-home/container-images
+    urls:
+    - https://github.com/nctiggy/helm-library/releases/download/fine-tune-jupyter-0.0.3/fine-tune-jupyter-0.0.3.tgz
+    version: 0.0.3
+  - annotations:
+      artifacthub.io/changes: |-
+        - kind: changed
+          description: Upgraded `common` chart dependency to version 4.5.2
+    apiVersion: v2
+    appVersion: v4.1.0.6175
     created: "2024-02-28T20:09:09.155526-08:00"
     dependencies:
     - name: common
@@ -81,4 +110,4 @@ entries:
     urls:
     - https://github.com/nctiggy/helm-library/releases/download/fine-tune-jupyter-0.0.1/fine-tune-jupyter-0.0.1.tgz
     version: 0.0.1
-generated: "2024-02-28T20:09:09.155541-08:00"
+generated: "2024-02-28T20:26:30.562697-08:00"
