@@ -1,0 +1,26 @@
+---
+apiVersion: v2
+appVersion: v1.0.0-beta-4
+description: Jupyter hub for data science
+name: kapowarr
+version: 0.0.3
+kubeVersion: ">=1.19.0-0"
+keywords:
+  - kapowarr
+  - arr
+home: https://github.com/nctiggy/helm-library
+icon: https://upload.wikimedia.org/wikipedia/commons/3/38/Jupyter_logo.svg
+sources:
+  - https://github.com/Casvt/Kapowarr
+  - https://github.com/k8s-at-home/container-images
+maintainers:
+  - name: nctiggy
+    email: nctiggy@gmail.com
+dependencies:
+  - name: common
+    repository: https://nctiggy.github.io/helm-library
+    version: 4.5.2
+annotations:
+  artifacthub.io/changes: |-
+    - kind: changed
+      description: Upgraded `common` chart dependency to version 4.5.2
