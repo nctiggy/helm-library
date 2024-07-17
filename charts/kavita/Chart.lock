@@ -1,0 +1,6 @@
+dependencies:
+- name: common
+  repository: https://nctiggy.github.io/helm-library
+  version: 4.5.2
+digest: sha256:7c7a935b6b86d059dfe7431a7c6dfca42cc950a6b7a9687cbca711654f28525c
+generated: "2024-07-16T20:15:04.623307843-07:00"

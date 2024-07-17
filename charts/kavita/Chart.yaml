@@ -1,0 +1,27 @@
+---
+apiVersion: v2
+appVersion: v0.8.2
+description: Kavita is a fast, feature rich, cross platform reading server
+name: kavita
+version: 0.0.1
+kubeVersion: ">=1.19.0-0"
+keywords:
+  - kavita
+  - opds
+home: https://github.com/nctiggy/helm-library
+icon: https://static-00.iconduck.com/assets.00/kavita-icon-512x512-ogctzfa8.png
+sources:
+  - https://www.kavitareader.com/
+  - https://github.com/Kareadita/Kavita
+  - https://github.com/k8s-at-home/container-images
+maintainers:
+  - name: nctiggy
+    email: nctiggy@gmail.com
+dependencies:
+  - name: common
+    repository: https://nctiggy.github.io/helm-library
+    version: 4.5.2
+annotations:
+  artifacthub.io/changes: |-
+    - kind: changed
+      description: Upgraded `common` chart dependency to version 4.5.2

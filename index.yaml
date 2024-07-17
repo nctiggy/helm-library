@@ -2,7 +2,7 @@ apiVersion: v1
 entries:
   common:
   - apiVersion: v2
-    created: "2024-07-16T16:28:13.07770488-07:00"
+    created: "2024-07-16T20:15:21.38554796-07:00"
     description: Function library for k8s-at-home charts
     digest: d26c0ec2cc8386989163acaecf1723c76209d1e5fb1e12ae91f355dac6d156cc
     home: https://github.com/k8s-at-home/library-charts/tree/main/stable/common
@@ -29,7 +29,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v4.1.0.6175
-    created: "2024-07-16T16:28:13.363162538-07:00"
+    created: "2024-07-16T20:15:21.672040372-07:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -58,7 +58,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v4.1.0.6175
-    created: "2024-07-16T16:28:13.228997344-07:00"
+    created: "2024-07-16T20:15:21.536020084-07:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -88,7 +88,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v1.0.0-beta-4
-    created: "2024-07-16T16:28:13.523416801-07:00"
+    created: "2024-07-16T20:15:21.816506711-07:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -111,4 +111,35 @@ entries:
     urls:
     - https://github.com/nctiggy/helm-library/releases/download/kapowarr-0.0.3/kapowarr-0.0.3.tgz
     version: 0.0.3
-generated: "2024-07-16T16:28:13.523428678-07:00"
+  kavita:
+  - annotations:
+      artifacthub.io/changes: |-
+        - kind: changed
+          description: Upgraded `common` chart dependency to version 4.5.2
+    apiVersion: v2
+    appVersion: v0.8.2
+    created: "2024-07-16T20:15:21.962165833-07:00"
+    dependencies:
+    - name: common
+      repository: https://nctiggy.github.io/helm-library
+      version: 4.5.2
+    description: Kavita is a fast, feature rich, cross platform reading server
+    digest: 30bc4cdbd1bc05c34859baf78e3ed06c9cf3530294e2e2c6f08cd2fe2bd1ca06
+    home: https://github.com/nctiggy/helm-library
+    icon: https://static-00.iconduck.com/assets.00/kavita-icon-512x512-ogctzfa8.png
+    keywords:
+    - kavita
+    - opds
+    kubeVersion: '>=1.19.0-0'
+    maintainers:
+    - email: nctiggy@gmail.com
+      name: nctiggy
+    name: kavita
+    sources:
+    - https://www.kavitareader.com/
+    - https://github.com/Kareadita/Kavita
+    - https://github.com/k8s-at-home/container-images
+    urls:
+    - https://github.com/nctiggy/helm-library/releases/download/kavita-0.0.1/kavita-0.0.1.tgz
+    version: 0.0.1
+generated: "2024-07-16T20:15:21.962178923-07:00"
