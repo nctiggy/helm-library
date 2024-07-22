@@ -1,0 +1,27 @@
+---
+apiVersion: v2
+appVersion: v1.0.3
+description: An IPTV Proxy
+name: telly
+version: 0.0.1
+kubeVersion: ">=1.19.0-0"
+keywords:
+  - tellytv
+  - plex
+  - iptv
+home: https://github.com/nctiggy/helm-library
+icon: https://avatars.githubusercontent.com/u/42452507?s=48&v=4
+sources:
+  - https://github.com/tellytv/telly
+  - https://github.com/k8s-at-home/container-images
+maintainers:
+  - name: nctiggy
+    email: nctiggy@gmail.com
+dependencies:
+  - name: common
+    repository: https://nctiggy.github.io/helm-library
+    version: 4.5.2
+annotations:
+  artifacthub.io/changes: |-
+    - kind: changed
+      description: Upgraded `common` chart dependency to version 4.5.2
