@@ -29,7 +29,12 @@ ingress:
 
 # -- Configures the probes for the main Pod.
 # @default -- See values.yaml
+
 probes:
+  readiness:
+    enabled: false
+  startup:
+    enabled: false
   liveness:
     enabled: false
     ## Set this to true if you wish to specify your own livenessProbe

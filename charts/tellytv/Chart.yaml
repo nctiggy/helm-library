@@ -3,7 +3,7 @@ apiVersion: v2
 appVersion: v1.0.3
 description: An IPTV Proxy
 name: telly
-version: 0.0.1
+version: 0.0.2
 kubeVersion: ">=1.19.0-0"
 keywords:
   - tellytv
