@@ -2,7 +2,7 @@ apiVersion: v1
 entries:
   common:
   - apiVersion: v2
-    created: "2025-10-16T14:10:08.922636-07:00"
+    created: "2026-01-07T10:35:20.011464-08:00"
     description: Function library for k8s-at-home charts
     digest: d26c0ec2cc8386989163acaecf1723c76209d1e5fb1e12ae91f355dac6d156cc
     home: https://github.com/k8s-at-home/library-charts/tree/main/stable/common
@@ -20,7 +20,7 @@ entries:
     name: common
     type: library
     urls:
-    - common-4.5.2.tgz
+    - .cr-release-packages/common-4.5.2.tgz
     version: 4.5.2
   fine-tune-jupyter:
   - annotations:
@@ -29,7 +29,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v4.1.0.6175
-    created: "2025-10-16T14:10:09.589093-07:00"
+    created: "2026-01-07T10:35:20.016431-08:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -50,7 +50,7 @@ entries:
     - https://github.com/jupyter/docker-stacks/tree/main
     - https://github.com/k8s-at-home/container-images
     urls:
-    - fine-tune-jupyter-0.0.3.tgz
+    - .cr-release-packages/fine-tune-jupyter-0.0.3.tgz
     version: 0.0.3
   - annotations:
       artifacthub.io/changes: |-
@@ -58,7 +58,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v4.1.0.6175
-    created: "2025-10-16T14:10:09.416499-07:00"
+    created: "2026-01-07T10:35:20.014833-08:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -79,7 +79,7 @@ entries:
     - https://github.com/jupyter/docker-stacks/tree/main
     - https://github.com/k8s-at-home/container-images
     urls:
-    - fine-tune-jupyter-0.0.2.tgz
+    - .cr-release-packages/fine-tune-jupyter-0.0.2.tgz
     version: 0.0.2
   - annotations:
       artifacthub.io/changes: |-
@@ -87,7 +87,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v4.1.0.6175
-    created: "2025-10-16T14:10:09.155634-07:00"
+    created: "2026-01-07T10:35:20.013121-08:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -108,8 +108,26 @@ entries:
     - https://github.com/jupyter/docker-stacks/tree/main
     - https://github.com/k8s-at-home/container-images
     urls:
-    - fine-tune-jupyter-0.0.1.tgz
+    - .cr-release-packages/fine-tune-jupyter-0.0.1.tgz
     version: 0.0.1
+  heartflow-demo:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-01-07T10:35:20.016555-08:00"
+    description: HeartFlow Demo Service for Spectro Cloud Edge Workshop
+    digest: a8293417054ec65d0340ee17b604b8c5136c9487ab67b3bedf3b13de814977af
+    keywords:
+    - heartflow
+    - demo
+    - edge
+    - spectrocloud
+    maintainers:
+    - name: nctiggy
+    name: heartflow-demo
+    type: application
+    urls:
+    - .cr-release-packages/heartflow-demo-1.0.0.tgz
+    version: 1.0.0
   kapowarr:
   - annotations:
       artifacthub.io/changes: |-
@@ -117,7 +135,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v1.0.0-beta-4
-    created: "2025-10-16T14:10:09.802491-07:00"
+    created: "2026-01-07T10:35:20.018129-08:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -138,7 +156,7 @@ entries:
     - https://github.com/Casvt/Kapowarr
     - https://github.com/k8s-at-home/container-images
     urls:
-    - kapowarr-0.0.3.tgz
+    - .cr-release-packages/kapowarr-0.0.3.tgz
     version: 0.0.3
   kavita:
   - annotations:
@@ -147,7 +165,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v0.8.2
-    created: "2025-10-16T14:10:10.065036-07:00"
+    created: "2026-01-07T10:35:20.019374-08:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -169,7 +187,7 @@ entries:
     - https://github.com/Kareadita/Kavita
     - https://github.com/k8s-at-home/container-images
     urls:
-    - kavita-0.0.1.tgz
+    - .cr-release-packages/kavita-0.0.1.tgz
     version: 0.0.1
   telly:
   - annotations:
@@ -178,7 +196,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v1.0.3
-    created: "2025-10-16T14:10:10.254924-07:00"
+    created: "2026-01-07T10:35:20.020953-08:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -200,6 +218,6 @@ entries:
     - https://github.com/tellytv/telly
     - https://github.com/k8s-at-home/container-images
     urls:
-    - telly-0.0.1.tgz
+    - .cr-release-packages/telly-0.0.1.tgz
     version: 0.0.1
-generated: "2025-10-16T14:10:10.255366-07:00"
+generated: "2026-01-07T10:35:20.009786-08:00"
