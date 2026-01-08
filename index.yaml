@@ -2,7 +2,7 @@ apiVersion: v1
 entries:
   common:
   - apiVersion: v2
-    created: "2026-01-07T12:17:25.80333-08:00"
+    created: "2026-01-07T21:26:07.967214-08:00"
     description: Function library for k8s-at-home charts
     digest: d26c0ec2cc8386989163acaecf1723c76209d1e5fb1e12ae91f355dac6d156cc
     home: https://github.com/k8s-at-home/library-charts/tree/main/stable/common
@@ -29,7 +29,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v4.1.0.6175
-    created: "2026-01-07T12:17:25.80795-08:00"
+    created: "2026-01-07T21:26:07.971611-08:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -58,7 +58,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v4.1.0.6175
-    created: "2026-01-07T12:17:25.806474-08:00"
+    created: "2026-01-07T21:26:07.970365-08:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -87,7 +87,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v4.1.0.6175
-    created: "2026-01-07T12:17:25.804869-08:00"
+    created: "2026-01-07T21:26:07.968631-08:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -112,8 +112,25 @@ entries:
     version: 0.0.1
   heartflow-demo:
   - apiVersion: v2
+    appVersion: 2.0.0
+    created: "2026-01-07T21:26:07.965843-08:00"
+    description: HeartFlow Demo Service for Spectro Cloud Edge Workshop
+    digest: 26f2f051a6513ac30c43451f829dc51e596a770d69b28de41444cc6bb7592ad9
+    keywords:
+    - heartflow
+    - demo
+    - edge
+    - spectrocloud
+    maintainers:
+    - name: nctiggy
+    name: heartflow-demo
+    type: application
+    urls:
+    - https://nctiggy.github.io/helm-library/heartflow-demo-1.2.0.tgz
+    version: 1.2.0
+  - apiVersion: v2
     appVersion: 1.0.0
-    created: "2026-01-07T12:17:25.801921-08:00"
+    created: "2026-01-07T21:26:07.965664-08:00"
     description: HeartFlow Demo Service for Spectro Cloud Edge Workshop
     digest: 87814f6f94d3b61797956a94beff4f69928857c8e42e990df4c45ccc0d31cd2f
     keywords:
@@ -130,7 +147,7 @@ entries:
     version: 1.1.0
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2026-01-07T12:17:25.808226-08:00"
+    created: "2026-01-07T21:26:07.971812-08:00"
     description: HeartFlow Demo Service for Spectro Cloud Edge Workshop
     digest: a8293417054ec65d0340ee17b604b8c5136c9487ab67b3bedf3b13de814977af
     keywords:
@@ -152,7 +169,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v1.0.0-beta-4
-    created: "2026-01-07T12:17:25.809701-08:00"
+    created: "2026-01-07T21:26:07.973081-08:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -182,7 +199,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v0.8.2
-    created: "2026-01-07T12:17:25.810941-08:00"
+    created: "2026-01-07T21:26:07.974438-08:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -213,7 +230,7 @@ entries:
           description: Upgraded `common` chart dependency to version 4.5.2
     apiVersion: v2
     appVersion: v1.0.3
-    created: "2026-01-07T12:17:25.812586-08:00"
+    created: "2026-01-07T21:26:07.976205-08:00"
     dependencies:
     - name: common
       repository: https://nctiggy.github.io/helm-library
@@ -237,4 +254,4 @@ entries:
     urls:
     - https://nctiggy.github.io/helm-library/.cr-release-packages/telly-0.0.1.tgz
     version: 0.0.1
-generated: "2026-01-07T12:17:25.801653-08:00"
+generated: "2026-01-07T21:26:07.965351-08:00"

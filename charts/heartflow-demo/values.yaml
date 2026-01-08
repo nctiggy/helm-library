@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: nctiggy/heartflow-demo
   pullPolicy: IfNotPresent
-  tag: "main"
+  tag: "v2"
 
 nameOverride: ""
 fullnameOverride: ""
@@ -11,7 +11,7 @@ fullnameOverride: ""
 service:
   type: NodePort
   port: 8080
-  nodePort: 30080
+  nodePort: 30081
 
 resources:
   limits:
