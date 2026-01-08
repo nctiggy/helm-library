@@ -1,9 +1,119 @@
 apiVersion: v1
 entries:
+  common:
+  - apiVersion: v2
+    created: "2026-01-07T12:17:25.80333-08:00"
+    description: Function library for k8s-at-home charts
+    digest: d26c0ec2cc8386989163acaecf1723c76209d1e5fb1e12ae91f355dac6d156cc
+    home: https://github.com/k8s-at-home/library-charts/tree/main/stable/common
+    keywords:
+    - k8s-at-home
+    - common
+    kubeVersion: '>=1.16.0-0'
+    maintainers:
+    - email: me@bjw-s.dev
+      name: bjw-s
+    - email: devin.kray@gmail.com
+      name: onedr0p
+    - email: nick@cajun.pro
+      name: dirtycajunrice
+    name: common
+    type: library
+    urls:
+    - https://nctiggy.github.io/helm-library/.cr-release-packages/common-4.5.2.tgz
+    version: 4.5.2
+  fine-tune-jupyter:
+  - annotations:
+      artifacthub.io/changes: |-
+        - kind: changed
+          description: Upgraded `common` chart dependency to version 4.5.2
+    apiVersion: v2
+    appVersion: v4.1.0.6175
+    created: "2026-01-07T12:17:25.80795-08:00"
+    dependencies:
+    - name: common
+      repository: https://nctiggy.github.io/helm-library
+      version: 4.5.2
+    description: Jupyter hub for data science
+    digest: 6c9b60ad6ff34fa805ae2a8db87f8866a6e9149abf2cfd9d6871ddd7547936d4
+    home: https://github.com/nctiggy/helm-library
+    icon: https://upload.wikimedia.org/wikipedia/commons/3/38/Jupyter_logo.svg
+    keywords:
+    - jupyter
+    - intel
+    kubeVersion: '>=1.19.0-0'
+    maintainers:
+    - email: nctiggy@gmail.com
+      name: nctiggy
+    name: fine-tune-jupyter
+    sources:
+    - https://github.com/jupyter/docker-stacks/tree/main
+    - https://github.com/k8s-at-home/container-images
+    urls:
+    - https://nctiggy.github.io/helm-library/.cr-release-packages/fine-tune-jupyter-0.0.3.tgz
+    version: 0.0.3
+  - annotations:
+      artifacthub.io/changes: |-
+        - kind: changed
+          description: Upgraded `common` chart dependency to version 4.5.2
+    apiVersion: v2
+    appVersion: v4.1.0.6175
+    created: "2026-01-07T12:17:25.806474-08:00"
+    dependencies:
+    - name: common
+      repository: https://nctiggy.github.io/helm-library
+      version: 4.5.2
+    description: Jupyter hub for data science
+    digest: 2a463d6628c83f3e05f5e9842a51877b0d12b214049a471d1e6a19168b23b587
+    home: https://github.com/nctiggy/helm-library
+    icon: https://upload.wikimedia.org/wikipedia/commons/3/38/Jupyter_logo.svg
+    keywords:
+    - jupyter
+    - intel
+    kubeVersion: '>=1.19.0-0'
+    maintainers:
+    - email: nctiggy@gmail.com
+      name: nctiggy
+    name: fine-tune-jupyter
+    sources:
+    - https://github.com/jupyter/docker-stacks/tree/main
+    - https://github.com/k8s-at-home/container-images
+    urls:
+    - https://nctiggy.github.io/helm-library/.cr-release-packages/fine-tune-jupyter-0.0.2.tgz
+    version: 0.0.2
+  - annotations:
+      artifacthub.io/changes: |-
+        - kind: changed
+          description: Upgraded `common` chart dependency to version 4.5.2
+    apiVersion: v2
+    appVersion: v4.1.0.6175
+    created: "2026-01-07T12:17:25.804869-08:00"
+    dependencies:
+    - name: common
+      repository: https://nctiggy.github.io/helm-library
+      version: 4.5.2
+    description: Jupyter hub for data science
+    digest: 195dfadef13d4a38bad9d819ab87b1fa06e63cab17babcd8ac1d2730ec172bc4
+    home: https://github.com/nctiggy/helm-library
+    icon: https://upload.wikimedia.org/wikipedia/commons/3/38/Jupyter_logo.svg
+    keywords:
+    - jupyter
+    - intel
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - email: nctiggy@gmail.com
+      name: nctiggy
+    name: fine-tune-jupyter
+    sources:
+    - https://github.com/jupyter/docker-stacks/tree/main
+    - https://github.com/k8s-at-home/container-images
+    urls:
+    - https://nctiggy.github.io/helm-library/.cr-release-packages/fine-tune-jupyter-0.0.1.tgz
+    version: 0.0.1
   heartflow-demo:
   - apiVersion: v2
     appVersion: 2.0.0
-    created: "2026-01-08T05:20:15.108554859Z"
+    created: "2026-01-08T05:24:25.155836647Z"
     description: HeartFlow Demo Service for Spectro Cloud Edge Workshop
     digest: 8e4aaadba29c4da92051bb64dee2daf4d9b2bdc26ce30a1b09dfdaba2d66f9da
     keywords:
@@ -18,4 +128,130 @@ entries:
     urls:
     - https://nctiggy.github.io/helm-library/heartflow-demo-1.2.0.tgz
     version: 1.2.0
-generated: "2026-01-08T05:20:15.10831687Z"
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-01-07T12:17:25.801921-08:00"
+    description: HeartFlow Demo Service for Spectro Cloud Edge Workshop
+    digest: 87814f6f94d3b61797956a94beff4f69928857c8e42e990df4c45ccc0d31cd2f
+    keywords:
+    - heartflow
+    - demo
+    - edge
+    - spectrocloud
+    maintainers:
+    - name: nctiggy
+    name: heartflow-demo
+    type: application
+    urls:
+    - https://nctiggy.github.io/helm-library/heartflow-demo-1.1.0.tgz
+    version: 1.1.0
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-01-07T12:17:25.808226-08:00"
+    description: HeartFlow Demo Service for Spectro Cloud Edge Workshop
+    digest: a8293417054ec65d0340ee17b604b8c5136c9487ab67b3bedf3b13de814977af
+    keywords:
+    - heartflow
+    - demo
+    - edge
+    - spectrocloud
+    maintainers:
+    - name: nctiggy
+    name: heartflow-demo
+    type: application
+    urls:
+    - https://nctiggy.github.io/helm-library/.cr-release-packages/heartflow-demo-1.0.0.tgz
+    version: 1.0.0
+  kapowarr:
+  - annotations:
+      artifacthub.io/changes: |-
+        - kind: changed
+          description: Upgraded `common` chart dependency to version 4.5.2
+    apiVersion: v2
+    appVersion: v1.0.0-beta-4
+    created: "2026-01-07T12:17:25.809701-08:00"
+    dependencies:
+    - name: common
+      repository: https://nctiggy.github.io/helm-library
+      version: 4.5.2
+    description: Jupyter hub for data science
+    digest: b364b491aab2bb62b76cb3ce0437d50cd4b7936999a20fe302e6acf6c4bc76a0
+    home: https://github.com/nctiggy/helm-library
+    icon: https://upload.wikimedia.org/wikipedia/commons/3/38/Jupyter_logo.svg
+    keywords:
+    - kapowarr
+    - arr
+    kubeVersion: '>=1.19.0-0'
+    maintainers:
+    - email: nctiggy@gmail.com
+      name: nctiggy
+    name: kapowarr
+    sources:
+    - https://github.com/Casvt/Kapowarr
+    - https://github.com/k8s-at-home/container-images
+    urls:
+    - https://nctiggy.github.io/helm-library/.cr-release-packages/kapowarr-0.0.3.tgz
+    version: 0.0.3
+  kavita:
+  - annotations:
+      artifacthub.io/changes: |-
+        - kind: changed
+          description: Upgraded `common` chart dependency to version 4.5.2
+    apiVersion: v2
+    appVersion: v0.8.2
+    created: "2026-01-07T12:17:25.810941-08:00"
+    dependencies:
+    - name: common
+      repository: https://nctiggy.github.io/helm-library
+      version: 4.5.2
+    description: Kavita is a fast, feature rich, cross platform reading server
+    digest: 30bc4cdbd1bc05c34859baf78e3ed06c9cf3530294e2e2c6f08cd2fe2bd1ca06
+    home: https://github.com/nctiggy/helm-library
+    icon: https://static-00.iconduck.com/assets.00/kavita-icon-512x512-ogctzfa8.png
+    keywords:
+    - kavita
+    - opds
+    kubeVersion: '>=1.19.0-0'
+    maintainers:
+    - email: nctiggy@gmail.com
+      name: nctiggy
+    name: kavita
+    sources:
+    - https://www.kavitareader.com/
+    - https://github.com/Kareadita/Kavita
+    - https://github.com/k8s-at-home/container-images
+    urls:
+    - https://nctiggy.github.io/helm-library/.cr-release-packages/kavita-0.0.1.tgz
+    version: 0.0.1
+  telly:
+  - annotations:
+      artifacthub.io/changes: |-
+        - kind: changed
+          description: Upgraded `common` chart dependency to version 4.5.2
+    apiVersion: v2
+    appVersion: v1.0.3
+    created: "2026-01-07T12:17:25.812586-08:00"
+    dependencies:
+    - name: common
+      repository: https://nctiggy.github.io/helm-library
+      version: 4.5.2
+    description: An IPTV Proxy
+    digest: d2cf862f06cf24c65916ad1bd53891b2bf78d3d04ae7f5c69694386f35b1ec5a
+    home: https://github.com/nctiggy/helm-library
+    icon: https://avatars.githubusercontent.com/u/42452507?s=48&v=4
+    keywords:
+    - tellytv
+    - plex
+    - iptv
+    kubeVersion: '>=1.19.0-0'
+    maintainers:
+    - email: nctiggy@gmail.com
+      name: nctiggy
+    name: telly
+    sources:
+    - https://github.com/tellytv/telly
+    - https://github.com/k8s-at-home/container-images
+    urls:
+    - https://nctiggy.github.io/helm-library/.cr-release-packages/telly-0.0.1.tgz
+    version: 0.0.1
+generated: "2026-01-08T05:24:25.155608247Z"
