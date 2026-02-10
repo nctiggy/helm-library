@@ -1,0 +1,14 @@
+apiVersion: v2
+name: wwt-custom-app
+description: WWT-branded edge application for Palette update demo
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: nctiggy
+keywords:
+  - wwt
+  - demo
+  - edge
+  - spectrocloud
+  - palette
