@@ -28,8 +28,13 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v4
 
+      - name: Add helm repo dependencies
+        run: helm repo add nctiggy https://nctiggy.github.io/helm-library
+
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
+        with:
+          skip_existing: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
@@ -48,15 +53,16 @@ jobs:
 
       - name: Package and push all charts
         run: |
+          helm repo add nctiggy https://nctiggy.github.io/helm-library
           for chart_dir in charts/*/; do
             chart_name=$(basename "$chart_dir")
-            # Skip library charts
             chart_type=$(grep '^type:' "$chart_dir/Chart.yaml" | awk '{print $2}')
             if [ "$chart_type" = "library" ]; then
               echo "Skipping library chart: $chart_name"
               continue
             fi
             echo "Packaging and pushing $chart_name..."
+            helm dependency build "$chart_dir" 2>/dev/null || true
             helm package "$chart_dir"
             helm push ${chart_name}-*.tgz oci://ghcr.io/nctiggy/charts
             rm -f ${chart_name}-*.tgz
