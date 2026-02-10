@@ -223,6 +223,25 @@ entries:
     urls:
     - https://github.com/nctiggy/helm-library/releases/download/kavita-0.0.1/kavita-0.0.1.tgz
     version: 0.0.1
+  wwt-custom-app:
+  - apiVersion: v2
+    appVersion: 2.0.0
+    created: "2026-02-10T21:43:28.003573Z"
+    description: WWT-branded edge application for Palette update demo
+    digest: a378285aefbfd15907ded96a255ed46febacbf8067efbdad7e6e9a075dc98d92
+    keywords:
+    - wwt
+    - demo
+    - edge
+    - spectrocloud
+    - palette
+    maintainers:
+    - name: nctiggy
+    name: wwt-custom-app
+    type: application
+    urls:
+    - https://github.com/nctiggy/helm-library/releases/download/wwt-custom-app-2.0.0/wwt-custom-app-2.0.0.tgz
+    version: 2.0.0
   telly:
   - annotations:
       artifacthub.io/changes: |-
