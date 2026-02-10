@@ -54,9 +54,9 @@ jobs:
             fi
             echo "Packaging and pushing $chart_name..."
             helm dependency build "$chart_dir" 2>/dev/null || true
-            if helm package "$chart_dir"; then
-              helm push ${chart_name}-*.tgz oci://ghcr.io/nctiggy/charts || echo "Warning: failed to push $chart_name"
-              rm -f ${chart_name}-*.tgz
+            if helm package "$chart_dir" -d /tmp/helm-pkg/; then
+              helm push /tmp/helm-pkg/${chart_name}-*.tgz oci://ghcr.io/nctiggy/charts || echo "Warning: failed to push $chart_name"
+              rm -f /tmp/helm-pkg/${chart_name}-*.tgz
             else
               echo "Warning: failed to package $chart_name, skipping"
             fi
