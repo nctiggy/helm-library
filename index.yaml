@@ -20,7 +20,7 @@ entries:
     name: common
     type: library
     urls:
-    - https://nctiggy.github.io/helm-library/.cr-release-packages/common-4.5.2.tgz
+    - https://github.com/nctiggy/helm-library/releases/download/common-4.5.2/common-4.5.2.tgz
     version: 4.5.2
   fine-tune-jupyter:
   - annotations:
@@ -50,7 +50,7 @@ entries:
     - https://github.com/jupyter/docker-stacks/tree/main
     - https://github.com/k8s-at-home/container-images
     urls:
-    - https://nctiggy.github.io/helm-library/.cr-release-packages/fine-tune-jupyter-0.0.3.tgz
+    - https://github.com/nctiggy/helm-library/releases/download/fine-tune-jupyter-0.0.3/fine-tune-jupyter-0.0.3.tgz
     version: 0.0.3
   - annotations:
       artifacthub.io/changes: |-
@@ -79,7 +79,7 @@ entries:
     - https://github.com/jupyter/docker-stacks/tree/main
     - https://github.com/k8s-at-home/container-images
     urls:
-    - https://nctiggy.github.io/helm-library/.cr-release-packages/fine-tune-jupyter-0.0.2.tgz
+    - https://github.com/nctiggy/helm-library/releases/download/fine-tune-jupyter-0.0.2/fine-tune-jupyter-0.0.2.tgz
     version: 0.0.2
   - annotations:
       artifacthub.io/changes: |-
@@ -108,7 +108,7 @@ entries:
     - https://github.com/jupyter/docker-stacks/tree/main
     - https://github.com/k8s-at-home/container-images
     urls:
-    - https://nctiggy.github.io/helm-library/.cr-release-packages/fine-tune-jupyter-0.0.1.tgz
+    - https://github.com/nctiggy/helm-library/releases/download/fine-tune-jupyter-0.0.1/fine-tune-jupyter-0.0.1.tgz
     version: 0.0.1
   heartflow-demo:
   - apiVersion: v2
@@ -160,7 +160,7 @@ entries:
     name: heartflow-demo
     type: application
     urls:
-    - https://nctiggy.github.io/helm-library/.cr-release-packages/heartflow-demo-1.0.0.tgz
+    - https://github.com/nctiggy/helm-library/releases/download/heartflow-demo-1.0.0/heartflow-demo-1.0.0.tgz
     version: 1.0.0
   kapowarr:
   - annotations:
@@ -190,7 +190,7 @@ entries:
     - https://github.com/Casvt/Kapowarr
     - https://github.com/k8s-at-home/container-images
     urls:
-    - https://nctiggy.github.io/helm-library/.cr-release-packages/kapowarr-0.0.3.tgz
+    - https://github.com/nctiggy/helm-library/releases/download/kapowarr-0.0.3/kapowarr-0.0.3.tgz
     version: 0.0.3
   kavita:
   - annotations:
@@ -221,7 +221,7 @@ entries:
     - https://github.com/Kareadita/Kavita
     - https://github.com/k8s-at-home/container-images
     urls:
-    - https://nctiggy.github.io/helm-library/.cr-release-packages/kavita-0.0.1.tgz
+    - https://github.com/nctiggy/helm-library/releases/download/kavita-0.0.1/kavita-0.0.1.tgz
     version: 0.0.1
   telly:
   - annotations:
@@ -252,6 +252,6 @@ entries:
     - https://github.com/tellytv/telly
     - https://github.com/k8s-at-home/container-images
     urls:
-    - https://nctiggy.github.io/helm-library/.cr-release-packages/telly-0.0.1.tgz
+    - https://github.com/nctiggy/helm-library/releases/download/telly-0.0.1/telly-0.0.1.tgz
     version: 0.0.1
 generated: "2026-01-08T05:24:25.155608247Z"
