@@ -37,23 +37,14 @@ jobs:
           skip_existing: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-
-  oci-push:
-    name: Push Charts to GHCR (OCI)
-    runs-on: ubuntu-latest
-    needs: release
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
+        continue-on-error: true
 
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Package and push all charts
+      - name: Push charts to GHCR (OCI)
         run: |
-          helm repo add nctiggy https://nctiggy.github.io/helm-library
+          helm repo add nctiggy https://nctiggy.github.io/helm-library 2>/dev/null || true
           for chart_dir in charts/*/; do
             chart_name=$(basename "$chart_dir")
             chart_type=$(grep '^type:' "$chart_dir/Chart.yaml" | awk '{print $2}')
@@ -63,7 +54,10 @@ jobs:
             fi
             echo "Packaging and pushing $chart_name..."
             helm dependency build "$chart_dir" 2>/dev/null || true
-            helm package "$chart_dir"
-            helm push ${chart_name}-*.tgz oci://ghcr.io/nctiggy/charts
-            rm -f ${chart_name}-*.tgz
+            if helm package "$chart_dir"; then
+              helm push ${chart_name}-*.tgz oci://ghcr.io/nctiggy/charts || echo "Warning: failed to push $chart_name"
+              rm -f ${chart_name}-*.tgz
+            else
+              echo "Warning: failed to package $chart_name, skipping"
+            fi
           done
