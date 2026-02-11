@@ -26,3 +26,21 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# Optional GPU inference backend (enable for GPU nodes)
+gpuInference:
+  enabled: false
+  image:
+    repository: nctiggy/wwt-gpu-inference
+    pullPolicy: IfNotPresent
+    tag: "1.0.0"
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  service:
+    type: NodePort
+    port: 8080
+    nodePort: 30081

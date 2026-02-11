@@ -1,0 +1,51 @@
+{{- if .Values.gpuInference.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "wwt-custom-app.fullname" . }}-gpu-inference
+  labels:
+    {{- include "wwt-custom-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gpu-inference
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "wwt-custom-app.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: gpu-inference
+  template:
+    metadata:
+      labels:
+        {{- include "wwt-custom-app.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: gpu-inference
+    spec:
+      containers:
+        - name: gpu-inference
+          image: "{{ .Values.gpuInference.image.repository }}:{{ .Values.gpuInference.image.tag }}"
+          imagePullPolicy: {{ .Values.gpuInference.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.gpuInference.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
