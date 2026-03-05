@@ -112,8 +112,27 @@ entries:
     version: 0.0.1
   heartflow-demo:
   - apiVersion: v2
+    appVersion: 3.0.0
+    created: "2026-03-04T23:48:23.601271-06:00"
+    description: HeartFlow Demo Service with Redis persistence for Spectro Cloud Edge
+    digest: dc557c2005fa8cec7dc4313024deba2f376c149af537e7f15f408bcfa89e1168
+    keywords:
+    - heartflow
+    - demo
+    - edge
+    - spectrocloud
+    - redis
+    - persistence
+    maintainers:
+    - name: nctiggy
+    name: heartflow-demo
+    type: application
+    urls:
+    - https://nctiggy.github.io/helm-library/heartflow-demo-2.0.0.tgz
+    version: 2.0.0
+  - apiVersion: v2
     appVersion: 2.0.0
-    created: "2026-01-08T05:24:25.155836647Z"
+    created: "2026-03-04T23:48:23.600972-06:00"
     description: HeartFlow Demo Service for Spectro Cloud Edge Workshop
     digest: 8e4aaadba29c4da92051bb64dee2daf4d9b2bdc26ce30a1b09dfdaba2d66f9da
     keywords:
@@ -284,4 +303,4 @@ entries:
     urls:
     - https://github.com/nctiggy/helm-library/releases/download/wwt-custom-app-2.0.0/wwt-custom-app-2.0.0.tgz
     version: 2.0.0
-generated: "2026-03-04T18:19:19.684800679Z"
+generated: "2026-03-04T23:48:23.60036-06:00"
