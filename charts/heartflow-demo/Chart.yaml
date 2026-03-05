@@ -1,9 +1,9 @@
 apiVersion: v2
 name: heartflow-demo
-description: HeartFlow Demo Service for Spectro Cloud Edge Workshop
+description: HeartFlow Demo Service with Redis persistence for Spectro Cloud Edge
 type: application
-version: 1.2.0
-appVersion: "2.0.0"
+version: 2.0.0
+appVersion: "3.0.0"
 maintainers:
   - name: nctiggy
 keywords:
@@ -11,3 +11,5 @@ keywords:
   - demo
   - edge
   - spectrocloud
+  - redis
+  - persistence
