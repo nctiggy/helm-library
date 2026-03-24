@@ -3,7 +3,7 @@ replicaCount: 2
 image:
   repository: nctiggy/healthdata-viewer
   pullPolicy: IfNotPresent
-  tag: "v1"
+  tag: "v2"
 
 nameOverride: ""
 fullnameOverride: ""
