@@ -112,6 +112,24 @@ entries:
     version: 0.0.1
   healthdata-viewer:
   - apiVersion: v2
+    appVersion: 2.0.0
+    created: "2026-03-24T05:10:29.33131565Z"
+    description: HealthData Patient Record Archive Viewer
+    digest: fb0e63b2557aa4bd564ac3a5bbff58146d22ec2ab85e1fa56e82ce9d0a1d3ed5
+    keywords:
+    - healthdata
+    - healthcare
+    - demo
+    - spectrocloud
+    - palette
+    maintainers:
+    - name: nctiggy
+    name: healthdata-viewer
+    type: application
+    urls:
+    - https://github.com/nctiggy/helm-library/releases/download/healthdata-viewer-2.0.0/healthdata-viewer-2.0.0.tgz
+    version: 2.0.0
+  - apiVersion: v2
     appVersion: 1.0.0
     created: "2026-03-24T05:02:09.330365893Z"
     description: HealthData Patient Record Archive Viewer
@@ -322,4 +340,4 @@ entries:
     urls:
     - https://github.com/nctiggy/helm-library/releases/download/wwt-custom-app-2.0.0/wwt-custom-app-2.0.0.tgz
     version: 2.0.0
-generated: "2026-03-24T05:02:09.330385593Z"
+generated: "2026-03-24T05:10:29.3313333Z"
