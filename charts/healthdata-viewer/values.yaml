@@ -1,0 +1,33 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/nctiggy/healthdata-viewer
+  pullPolicy: IfNotPresent
+  tag: "v1"
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: NodePort
+  port: 80
+  nodePort: 30080
+
+database:
+  host: "harmony-postgres"
+  port: 5432
+  name: "healthdata"
+  user: "healthdata"
+  password: "healthdata"
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

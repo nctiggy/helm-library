@@ -1,0 +1,14 @@
+apiVersion: v2
+name: healthdata-viewer
+description: HealthData Patient Record Archive Viewer
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: nctiggy
+keywords:
+  - healthdata
+  - healthcare
+  - demo
+  - spectrocloud
+  - palette
