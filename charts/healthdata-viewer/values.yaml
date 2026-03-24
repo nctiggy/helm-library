@@ -3,7 +3,7 @@ replicaCount: 2
 image:
   repository: nctiggy/healthdata-viewer
   pullPolicy: IfNotPresent
-  tag: "v2"
+  tag: "v1"
 
 nameOverride: ""
 fullnameOverride: ""
@@ -14,7 +14,7 @@ service:
   nodePort: 30080
 
 database:
-  host: "harmony-postgres"
+  host: "10.30.0.77"
   port: 5432
   name: "healthdata"
   user: "healthdata"
