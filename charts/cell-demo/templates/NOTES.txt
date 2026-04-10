@@ -1,0 +1,11 @@
+CellOps Network Operations Portal has been deployed!
+
+  App Version: {{ .Values.app.version }}
+  Connection:  {{ .Values.app.connectionMethod }}
+  DB Host:     {{ .Values.database.host }}
+
+Access the application:
+{{- if eq .Values.service.type "NodePort" }}
+  export NODE_IP=$(kubectl get nodes -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:{{ .Values.service.nodePort }}
+{{- end }}
