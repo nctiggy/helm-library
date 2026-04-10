@@ -14,7 +14,7 @@ service:
   nodePort: 30080
 
 database:
-  host: "postgresql.virtual-machines.svc.cluster.local"
+  host: "10.30.0.50"
   port: 5432
   name: "cellops"
   user: "cellops"
