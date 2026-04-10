@@ -2,7 +2,7 @@ apiVersion: v2
 name: cell-demo
 description: CellOps Network Operations Portal — VMO Demo Application
 type: application
-version: 2.0.0
+version: 2.1.0
 appVersion: "2.0.0"
 maintainers:
   - name: nctiggy
