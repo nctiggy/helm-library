@@ -1,5 +1,24 @@
 apiVersion: v1
 entries:
+  cell-demo:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-04-10T15:09:52.756533752Z"
+    description: CellOps Network Operations Portal — VMO Demo Application
+    digest: 06359a6a46a66562eef4c7ffd8b6f0b15ce07616d297d8b8fa46edf0076c7c5c
+    keywords:
+    - cellular
+    - network
+    - demo
+    - spectrocloud
+    - palette
+    maintainers:
+    - name: nctiggy
+    name: cell-demo
+    type: application
+    urls:
+    - https://github.com/nctiggy/helm-library/releases/download/cell-demo-1.0.0/cell-demo-1.0.0.tgz
+    version: 1.0.0
   common:
   - apiVersion: v2
     created: "2026-01-07T12:17:25.80333-08:00"
@@ -340,4 +359,4 @@ entries:
     urls:
     - https://github.com/nctiggy/helm-library/releases/download/wwt-custom-app-2.0.0/wwt-custom-app-2.0.0.tgz
     version: 2.0.0
-generated: "2026-03-24T05:10:29.3313333Z"
+generated: "2026-04-10T15:09:52.918081934Z"
