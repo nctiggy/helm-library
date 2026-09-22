@@ -357,6 +357,29 @@ entries:
     urls:
     - https://nctiggy.github.io/helm-library/keysight-telemetry-0.1.0.tgz
     version: 0.1.0
+  onepassword-connect:
+  - apiVersion: v2
+    appVersion: 1.8.2
+    created: "2026-09-22T18:18:02.059945958Z"
+    dependencies:
+    - name: connect
+      repository: https://1password.github.io/connect-helm-charts
+      version: 2.4.1
+    description: 1Password Connect plus the External Secrets ClusterSecretStore that
+      reads through it
+    digest: c711545f394bb64952cd4379b469d39d64277be96c251c55803fef12ab126b1c
+    home: https://github.com/nctiggy/helm-library
+    kubeVersion: '>=1.24.0-0'
+    maintainers:
+    - email: nctiggy@gmail.com
+      name: nctiggy
+    name: onepassword-connect
+    sources:
+    - https://github.com/1Password/connect-helm-charts
+    type: application
+    urls:
+    - https://github.com/nctiggy/helm-library/releases/download/onepassword-connect-0.1.0/onepassword-connect-0.1.0.tgz
+    version: 0.1.0
   telly:
   - annotations:
       artifacthub.io/changes: |-
@@ -418,4 +441,4 @@ entries:
     urls:
     - https://github.com/nctiggy/helm-library/releases/download/wwt-custom-app-2.0.0/wwt-custom-app-2.0.0.tgz
     version: 2.0.0
-generated: "2026-06-12T13:05:34.962521375Z"
+generated: "2026-09-22T18:18:02.059996903Z"
