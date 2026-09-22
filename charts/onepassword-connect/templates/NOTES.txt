@@ -1,0 +1,5 @@
+1Password Connect: http://{{ .Values.connect.connect.host | default "onepassword-connect" }}.{{ .Release.Namespace }}.svc:8080
+
+Two Secrets must exist in {{ .Release.Namespace }} before Connect starts:
+  {{ .Values.connect.connect.credentialsName }}  key {{ .Values.connect.connect.credentialsKey }}  (1password-credentials.json)
+  {{ .Values.secretStore.tokenSecret.name }}  key {{ .Values.secretStore.tokenSecret.key }}  (Connect token for the vault)

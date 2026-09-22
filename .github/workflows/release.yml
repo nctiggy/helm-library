@@ -29,7 +29,9 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Add helm repo dependencies
-        run: helm repo add nctiggy https://nctiggy.github.io/helm-library
+        run: |
+          helm repo add nctiggy https://nctiggy.github.io/helm-library
+          helm repo add 1password https://1password.github.io/connect-helm-charts
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0

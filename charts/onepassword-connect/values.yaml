@@ -1,0 +1,38 @@
+# Upstream 1password/connect values, passed through under `connect:`.
+# The credentials Secret is created out of band, never through values: anything in
+# values is stored in the Palette profile. With connect.credentials unset the
+# upstream chart creates no Secret and mounts the existing one.
+connect:
+  connect:
+    credentialsName: op-credentials
+    credentialsKey: 1password-credentials.json
+    serviceType: ClusterIP
+    api:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 128Mi
+    sync:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 128Mi
+  operator:
+    create: false
+
+# The External Secrets store that reads through this Connect server. Needs the
+# External Secrets Operator CRDs, so its layer must install before this one.
+secretStore:
+  create: true
+  name: onepassword-connect
+  # Vault name -> lookup priority.
+  vaults:
+    Lobster: 1
+  # Connect token for the vault, created out of band like the credentials.
+  tokenSecret:
+    name: onepassword-connect-token
+    key: token

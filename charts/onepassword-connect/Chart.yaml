@@ -1,0 +1,18 @@
+---
+apiVersion: v2
+name: onepassword-connect
+description: 1Password Connect plus the External Secrets ClusterSecretStore that reads through it
+type: application
+version: 0.1.0
+appVersion: "1.8.2"
+kubeVersion: ">=1.24.0-0"
+home: https://github.com/nctiggy/helm-library
+sources:
+  - https://github.com/1Password/connect-helm-charts
+maintainers:
+  - name: nctiggy
+    email: nctiggy@gmail.com
+dependencies:
+  - name: connect
+    repository: https://1password.github.io/connect-helm-charts
+    version: 2.4.1
