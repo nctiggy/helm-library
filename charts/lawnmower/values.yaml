@@ -1,0 +1,447 @@
+# One toggle per component, all default OFF.
+#
+# Craig, 8/28/26: "I want the whole system to be running on the K8s environment, not on
+# a VM." That is weeks of work, and a migration which must land all at once will not
+# land. So every component is a switch: turn one on, leave the rest on the VM, and the
+# two halves coexist over the network.
+#
+# The order they can be enabled is NOT the order of importance. dispatchd is first
+# because it is the only always-on piece with no dependency on crswd; the console shells
+# out to crswd-api and lawnmower-route, so it cannot lead even though it is the piece
+# Craig actually looks at.
+
+nameOverride: ""
+image:
+  registry: ghcr.io
+  # Set per component below; there is no shared image, because these are separate
+  # programs in separate repos that happen to be deployed together.
+  pullPolicy: IfNotPresent
+
+dispatchd:
+  enabled: false
+  # k8s-08, 9/22/26: nothing was ever pushed to ghcr.io/craig-ai-tooling/dispatchd, and the
+  # cluster has no pull secret for a private registry anyway. Docker Hub, public, built from
+  # dispatch@458777e -- the exact revision ~/bin/dispatchd on the VM was running -- so the
+  # cutover moved the inbox and changed nothing about how it behaves. dispatch main is 8
+  # commits ahead with store changes; bump the tag as its own change, not inside a cutover.
+  image:
+    registry: docker.io
+    repository: nctiggy/dispatchd
+    tag: "458777e"
+  replicas: 1          # NOT more: one SQLite file, one writer. See the Deployment.
+  port: 8850
+  persistence:
+    enabled: true
+    size: 2Gi
+    # placementCount 1 on purpose. linstor-fs-storage-enc and linstor-replicated are
+    # both placementCount 2, and a replicated volume under a store that also replicates
+    # keeps four copies of every byte across two layers that each think they are right.
+    # dispatchd does not replicate, so 2 would be a reasonable choice here -- but the
+    # inbox's real durability comes from offsite.sh mirroring the journals, not from the
+    # volume. Revisit when the inbox moves onto object storage (lm-40).
+    storageClass: linstor-fs-storage-enc
+  # The HMAC secret. NOT in this chart and not in git: created by
+  # cluster/scripts/restore-secrets.sh, like every other credential here.
+  existingSecret: lawnmower-dispatch
+  secretKey: DISPATCH_SECRET
+
+console:
+  # The board Craig actually looks at. Templates only until k8s-10 throws the switch: this
+  # toggle renders a Deployment, a Service and an HTTPRoute onto the `lm` Gateway's existing
+  # lawnmower.craigcloud.io listener, plus a Helm hook Job that runs loop/preflight.sh
+  # against the in-cluster Service before the release is called good.
+  #
+  # It could not lead the migration and still cannot: console.py shells out to crswd-api and
+  # lawnmower-route, and crswd is the last thing that moves (k8s-15). What changed on 9/18/26
+  # is that the path exists -- k8s-05 wired the Cloudflare Access route from a pod to crswd on
+  # the VM. So this template REQUIRES crswdAccess rather than rendering a console whose
+  # session panel is quietly empty. A check that cannot run must refuse.
+  enabled: false
+  # Pinned to -multiarch1 since 9/22/26, the first amd64+arm64 tag, built natively by
+  # image.yml's two legs. It carries Debian's chromium (k8s-21), which only the preflight
+  # hook Job below needs. The timers moved onto the same tag in the same change: -chrome1
+  # and -tools1 were arm64-only, and a pod the scheduler puts on lm-amd64-1 dies on
+  # `exec format error`.
+  # -ci8 (9/23/26, lm-mergiraf) is -multiarch1 plus the mergiraf merge driver; nothing else
+  # in the Dockerfile changed between them. image.yml run 35825500544, verify-tools 23 ok.
+  # Its own image keys rather than the timers' shared ones, deliberately. k8s-10 changes what
+  # a merge means: a merged PR becomes a new tag and a rollout, so this tag moves on its own
+  # schedule and pinning it to the timers' would tie two unrelated release cadences together.
+  image:
+    registry: docker.io
+    repository: nctiggy/ralph-runner
+    tag: 2.1.246-ci8
+  # The console is this repo's own source, and the image is PUBLIC on Docker Hub, so
+  # console.py and the loop/ scripts cannot be baked into it. The pod clones at start, the
+  # same shape and the same credential as the timer CronJobs (see timers above).
+  repo: craig-ai-tooling/ai-lawnmower
+  branch: main
+  port: 8860
+  replicas: 1
+  # Where the board is published. The listener already exists on Gateway `lm` with a Ready
+  # cert and a Cloudflare Access gate, and carried 0 routes until this one.
+  # sectionName MUST match a listener name in cluster/30-gateway/gateway.yaml --
+  # tests/test_chart_console.py fails if it drifts.
+  httpRoute:
+    gatewayName: lm
+    gatewayNamespace: lawnmower
+    sectionName: https
+    hostname: lawnmower.craigcloud.io
+  # crswd still runs on the VM. Reached through the Access app on the existing tunnel
+  # (k8s-05); crswdAccess.enabled must be on, and the template refuses to render without it.
+  crswdUrl: https://crswd.craigcloud.io
+  # The inbox. Left empty on purpose: when dispatchd.enabled is on the template computes the
+  # in-cluster Service name, and when it is not, rendering FAILS rather than defaulting to a
+  # loopback address that exists on the VM and not in a pod. k8s-08 is what turns it on.
+  dispatchUrl: ""
+  preflight:
+    # loop/preflight.sh as a post-install/post-upgrade hook Job. AGENTS.md: a 200 is not
+    # usable, preflight is the deploy gate. Off with the console, on with it.
+    enabled: true
+    # Long because preflight drives every page over real HTTP and runs a headless-Chromium
+    # layout check. Its systemd-side run on the VM takes minutes, not seconds.
+    deadline: 900
+
+crswd:
+  # A redesign, not a port. It holds sessions as tmux processes on one host, and it
+  # re-mints session tokens on restart -- which is exceptional on a VM and routine in
+  # Kubernetes. See lm-41.
+  enabled: false
+
+timers:
+  # The nine scheduled units that never start a model (k8s-06). One shared pod shape,
+  # one image: unlike dispatchd/console/crswd above, these are all the same program
+  # (this repo's own loop/ scripts) run on different schedules, so one image and one
+  # clone step really is shared rather than coincidentally identical.
+  image:
+    registry: docker.io
+    repository: nctiggy/ralph-runner
+    tag: 2.1.246-ci8
+  repo: craig-ai-tooling/ai-lawnmower
+  branch: main
+  # The Secret restore-secrets.sh already creates for the Ralph pod's own clone step
+  # (ralph-runner/job.yaml) -- read as a mounted file, never a secretKeyRef env. See
+  # that file's lm-ralph-token-outlives-run comment for why the distinction matters.
+  gitTokenSecret: ralph-git
+  # Same ServiceAccount rbac.serviceAccountName below names -- kept as one value so the
+  # two can never point at different names.
+  serviceAccountName: lawnmower-ralph-jobs
+  # `trigger` is the byte-exact line this row was derived from -- see
+  # ralph/plans/k8s-06/IMPLEMENTATION_PLAN.md's derivation table, measured out of
+  # loop/systemd/ on 9/18/26. `schedule`/`timeZone`/`persistent`/`deadline` are what a
+  # CronJob needs; `trigger` is what tests/test_chart_timers.py checks them against, so
+  # a systemd unit file that changes without this table changing fails the drift test
+  # instead of silently going stale. `timeZone` and `deadline` are omitted, not empty,
+  # on rows whose unit states neither.
+  units:
+    doctor:
+      enabled: false
+      unit: lawnmower-doctor
+      trigger: "OnCalendar=*-*-* 06,18:30:00 America/Los_Angeles"
+      schedule: "30 6,18 * * *"
+      timeZone: America/Los_Angeles
+      persistent: true
+      deadline: 180
+      command: ["loop/doctor.sh --quiet"]
+    offsite:
+      enabled: false
+      unit: lawnmower-offsite
+      trigger: "OnCalendar=*-*-* *:17:00 America/Los_Angeles"
+      schedule: "17 * * * *"
+      timeZone: America/Los_Angeles
+      persistent: true
+      command: ["loop/offsite.sh --go"]
+    ralph-token-refresh:
+      # k8s-09: the first timer to actually leave the VM. It is the only one of the eight
+      # that is cluster-native today -- it reads no VM state and nothing on the VM needs to
+      # reach it. It lists app=ralph Jobs here and writes the ralph-git Secret here.
+      enabled: false
+      # Mounts the ESO-synced App credential and points the minter at it. Only the units
+      # that mint a token get it.
+      needsAppCreds: true
+      unit: ralph-token-refresh
+      trigger: "OnCalendar=*-*-* *:00/30"
+      schedule: "*/30 * * * *"
+      persistent: false
+      command: ["loop/ralph-token-refresh.sh"]
+    mail:
+      enabled: false
+      unit: lawnmower-mail
+      trigger: "OnUnitActiveSec=30min"
+      schedule: "*/30 * * * *"
+      persistent: true
+      deadline: 900
+      command:
+        - "python3 loop/mail-probe.py --days 3 --quiet"
+        - "opp-axi triage --push || true"
+    metrics:
+      enabled: false
+      unit: lawnmower-metrics
+      trigger: "OnUnitActiveSec=30min"
+      schedule: "*/30 * * * *"
+      persistent: true
+      deadline: 180
+      command: ["loop/metrics.sh collect"]
+    reconcile:
+      enabled: false
+      unit: lawnmower-reconcile
+      trigger: "OnUnitActiveSec=20min"
+      schedule: "*/20 * * * *"
+      persistent: true
+      deadline: 600
+      command: ["python3 loop/reconcile-flight.py --go"]
+    repo-drift:
+      enabled: false
+      unit: lawnmower-repo-drift
+      trigger: "OnUnitActiveSec=15min"
+      schedule: "*/15 * * * *"
+      persistent: true
+      # 600, not 300: --go files inbox items now, and up to 3 dispatch calls at
+      # a 60s timeout each ride on top of a pass that has been measured at 240s
+      # on a loaded box. tests/test_chart_timers.py pins this against
+      # loop/systemd/lawnmower-repo-drift.service's TimeoutStartSec.
+      deadline: 600
+      command: ["python3 loop/repo-drift.py --go"]
+    retire-sessions:
+      enabled: false
+      unit: lawnmower-retire-sessions
+      trigger: "OnUnitActiveSec=15min"
+      schedule: "*/15 * * * *"
+      persistent: true
+      deadline: 180
+      command: ["loop/retire-sessions.sh --go"]
+
+cloneToken:
+  # The credential the clone step uses, and deliberately NOT the one it refreshes.
+  #
+  # ralph-token-refresh exists to keep Secret ralph-git alive. If its own pod cloned with
+  # ralph-git, the unit could only run while that token was already valid, which is the one
+  # situation it is not needed -- measured 9/18/26: with a 9-hour-old ralph-git the clone
+  # failed "Invalid username or token" and the CronJob failed before reaching its own script.
+  # A CronJob that goes red every 30 minutes while idle is a red nobody reads.
+  #
+  # So: a long-lived read credential for the clone, and the short-lived App-minted token for
+  # what Ralph pushes. Different jobs, different credentials, and the bootstrap loop is cut.
+  enabled: false
+  secretName: ralph-clone-token
+  itemId: uf5ktgb5jsjav44g7zez2cgaga   # "ralph-git fine-grained"
+  itemTitle: "ralph-git fine-grained"
+  # The PAT lives in the item's `credential` field, not `token` -- the item TITLE is not the
+  # token's name on GitHub (op-item-title-is-not-the-github-token-name).
+  field: credential
+  # 12h, not 1h: every ExternalSecret refresh spends the 1Password account's shared budget
+  # of 1000 requests a day (tests/test_op_budget.py has the arithmetic).
+  refreshInterval: 12h
+
+crswdAccess:
+  # The Cloudflare Access service token that lets a POD reach crswd on the VM (k8s-05).
+  #
+  # Measured 9/18/26, and it is the whole reason this exists: the Pi nodes are not
+  # Tailscale peers, 100.64.192.0/24 is Palette's overlay rather than the tailnet, and
+  # crswd binds 127.0.0.1:8765 only. There is no NodePort to open and no route to fix a
+  # flag on. What already runs is the `crswd` Cloudflare Access app on the existing
+  # tunnel, and the service token for it already exists in 1Password -- the same pair
+  # ~/code/claude-remote-session-webhook/deploy/crswd-api sends from the VM today. So
+  # this is wiring, not a new credential and not a new grant.
+  #
+  # Same shape as lm-42's tool gateway (#268): CF-Access-Client-Id + CF-Access-Client-Secret
+  # admit you at Cloudflare's edge, and crswd's own signature still decides whether you
+  # come in. The edge letting you knock is not the daemon letting you in.
+  enabled: false
+  secretName: crswd-access
+  # The "crswd" item, by ID for the same reason appCreds is: a title can be renamed in
+  # 1Password and silently break the sync.
+  itemId: j4k4ai3455wjz3g4csegbkjz74
+  itemTitle: "crswd"
+  # 12h, not 1h: every ExternalSecret refresh spends the 1Password account's shared budget
+  # of 1000 requests a day (tests/test_op_budget.py has the arithmetic).
+  refreshInterval: 12h
+  # Where the pair is mounted, and what loop/crswd-reach.sh reads as CRSWD_ACCESS_DIR.
+  # One value so the mount and the variable cannot disagree.
+  mountPath: /var/run/crswd-access
+  # The public hostname the tunnel already serves. NOT a loopback default: a pod has no
+  # loopback crswd, and a default that silently points at nothing is the failure this
+  # whole story exists to remove.
+  url: https://crswd.craigcloud.io
+
+appCreds:
+  # The GitHub App credential, synced from 1Password by ESO into this namespace (k8s-09).
+  # Off by default like every other toggle here. Needs the onepassword-lobster
+  # ClusterSecretStore, which already exists and is Valid/Ready.
+  enabled: false
+  secretName: ralph-app-creds
+  storeName: onepassword-connect
+  vault: Lobster
+  # The "Github Craig AI Tooling App" item, by ID. A title can be renamed in 1Password and
+  # silently break the sync; an ID cannot. Same convention as cloudflare-api-token.
+  itemId: 6cnzwg23z57qg4gwolkylfxd3m
+  itemTitle: "Github Craig AI Tooling App"
+  # 12h, not 1h: every ExternalSecret refresh spends the 1Password account's shared budget
+  # of 1000 requests a day (tests/test_op_budget.py has the arithmetic).
+  refreshInterval: 12h
+  # Where the Secret is mounted, and what loop/ralph-app-token.sh reads as
+  # RALPH_APP_CREDS_DIR. One value so the mount and the variable cannot disagree.
+  mountPath: /var/run/ralph-app-creds
+
+credentials:
+  # k8s-04: every Secret that used to be hand-restored from the VM disk, as ExternalSecrets.
+  #
+  # cluster/scripts/restore-secrets.sh read files out of /home and pushed them into the
+  # cluster, which made claude-server the source of truth for eight credentials -- the exact
+  # thing "nothing lives only on the VM disk" exists to end. Six of them had NO copy anywhere
+  # else; they were seeded into 1Password on 9/19/26 and verified byte-for-byte against their
+  # sources before anything was wired to them.
+  #
+  # One of the six had no file either. ~/.config/backyard-concrete-edit-token does not exist
+  # on this box, so the only copy of that value was the live cluster Secret, and a
+  # restore-secrets.sh run would have MINTED A NEW ONE and broken whoever holds the edit link.
+  # It was read out of the cluster and seeded from there.
+  #
+  # NOT here, each for its own reason rather than by omission:
+  #   external-secrets/onepassword-token -- the bootstrap. ESO cannot sync the credential ESO
+  #     authenticates with. It stays hand-restored and that is not a gap to close.
+  #   lawnmower/claude-credentials and claude-login-keeper -- written by the claudeKeeper
+  #     CronJob below (k8s-14). Syncing either from 1Password would fight the thing that
+  #     refreshes them, same as ralph-git.
+  #   lawnmower/ralph-git -- written by the ralph-token-refresh CronJob, which exists to keep
+  #     it alive. Syncing it from 1Password would fight the thing that refreshes it.
+  #
+  # `fields` maps the KUBERNETES key to the 1PASSWORD field, and the two differ on purpose: a
+  # dot in an `op item create` assignment is a SECTION separator, so `credentials.json=...`
+  # silently produced section `credentials`, field `json` (measured 9/19/26, and the item was
+  # recreated flat). The 1Password side is therefore underscored and ESO restores the dots.
+  enabled: false
+  storeName: onepassword-connect
+  # 12h like every other ExternalSecret here (tests/test_op_budget.py). Connect no longer
+  # spends the account budget, but a fallback to the SDK store would.
+  refreshInterval: 12h
+  items:
+    tunnel-credentials:
+      enabled: false
+      namespace: lawnmower
+      secretName: tunnel-credentials
+      itemId: yowochb3jixehikhrxopfhxqju
+      itemTitle: "lawnmower: tunnel-credentials"
+      fields:
+        credentials.json: credentials_json
+    sf-auth:
+      enabled: false
+      namespace: lawnmower
+      secretName: sf-auth
+      itemId: tkb3rrzwleuw6ngwabqp7z5ymu
+      itemTitle: "lawnmower: sf-auth"
+      fields:
+        auth.json: auth_json
+        key.json: key_json
+    tool-gateway-token:
+      # The gateway REFUSES TO START without this, deliberately: an unset token is a
+      # misconfiguration and a service holding a Salesforce credential must not run
+      # misconfigured. Shared secret between the gateway and its callers, minted once and
+      # never re-minted -- rotating it silently would 401 every caller at the next reconcile.
+      enabled: false
+      namespace: lawnmower
+      secretName: tool-gateway-token
+      itemId: nebx44swcecq2n637kive65bny
+      itemTitle: "lawnmower: tool-gateway-token"
+      fields:
+        token: token
+    dispatch:
+      # The HMAC secret dispatchd signs with. values.yaml has named `lawnmower-dispatch` as
+      # `dispatchd.existingSecret` since 8/29/26 and NOTHING has ever created it -- not
+      # restore-secrets.sh, not the chart, and it does not exist in the cluster (measured
+      # 9/19/26). Same shape as the rbac toggle that rendered nothing: a name on one side and
+      # nothing on the other. k8s-08 would have found this at cutover.
+      enabled: false
+      namespace: lawnmower
+      secretName: lawnmower-dispatch
+      itemId: izdjv5ejf6omidxng6wmpb52ay
+      itemTitle: "lawnmower: dispatch-hmac"
+      fields:
+        DISPATCH_SECRET: DISPATCH_SECRET
+    factory-s3:
+      # Object storage is the TrueNAS box, not this cluster. The Deployment consumes this with
+      # envFrom.secretRef, so every key becomes an env var verbatim and the names must stay
+      # exactly FACTORY_S3_*.
+      enabled: false
+      namespace: factory
+      secretName: factory-s3
+      itemId: 4hhgpkinypepgxrvontdxdil6y
+      itemTitle: "lawnmower: factory-s3"
+      fields:
+        FACTORY_S3_ENDPOINT: FACTORY_S3_ENDPOINT
+        FACTORY_S3_BUCKET: FACTORY_S3_BUCKET
+        FACTORY_S3_ACCESS_KEY: FACTORY_S3_ACCESS_KEY
+        FACTORY_S3_SECRET_KEY: FACTORY_S3_SECRET_KEY
+        FACTORY_S3_REGION: FACTORY_S3_REGION
+    backyard-concrete-edit:
+      enabled: false
+      namespace: backyard-concrete
+      secretName: backyard-concrete-edit
+      itemId: nrbmtspvstbkkiodq4o6dcj2r4
+      itemTitle: "lawnmower: backyard-concrete-edit"
+      fields:
+        token: token
+    arc-github-app:
+      # Already in 1Password -- the same item appCreds uses, because the ARC scale set and
+      # loop/ralph-app-token.sh authenticate as the same GitHub App. restore-secrets.sh needed
+      # ARC_GITHUB_APP_ITEM passed by hand and refused without it; this pins the id instead.
+      enabled: false
+      namespace: arc-runners
+      secretName: arc-github-app
+      itemId: 6cnzwg23z57qg4gwolkylfxd3m
+      itemTitle: "Github Craig AI Tooling App"
+      fields:
+        github_app_id: github_app_id
+        github_app_installation_id: github_app_installation_id
+        github_app_private_key: github_app_private_key
+
+claudeKeeper:
+  # k8s-14: ONE owner of the cluster's Claude login. loop/claude-login-keeper.py has the
+  # design and the measurements; templates/claude-keeper.yaml is what runs it.
+  #
+  # The keeper holds a SECOND login (Craig's one-time `loop/claude-keeper-login.sh`), never
+  # the VM's, so the two never race a refresh. Sessions mount sessionSecret, which carries
+  # no refresh token: they can use the login, never rotate it.
+  enabled: false
+  serviceAccountName: claude-login-keeper
+  # Full .credentials.json, refresh token included. Only the keeper's SA can read it.
+  keeperSecret: claude-login-keeper
+  # Access token + expiresAt only. What ralph-runner/job.yaml mounts, as a DIRECTORY.
+  sessionSecret: claude-credentials
+  lease: claude-login-keeper
+  backupClaim: claude-login-keeper
+  backupStorageClass: linstor-replicated
+  backupSize: 128Mi
+  # Every 30 min; refresh once the 8h token has under 2h left. A missed run or two still
+  # leaves sessions with an hour of valid token.
+  schedule: "*/30 * * * *"
+  refreshBelowSeconds: 7200
+  deadlineSeconds: 600
+  model: haiku
+
+rbac:
+  # The ServiceAccount the timer CronJobs run as (k8s-06). Off by default like every
+  # other toggle here; templates/rbac.yaml renders the Role/RoleBinding only when this
+  # is true.
+  enabled: false
+  serviceAccountName: lawnmower-ralph-jobs
+
+# Applies to every pod this chart runs. Empty since multiarch-images (9/22/26): the
+# ralph-runner tag above is amd64+arm64, so a pod may land on lm-amd64-1 or a Pi. Any image
+# added here must be multi-arch too, or pin it here.
+nodeSelector: {}
+
+# Tolerations for the pods that mount NO LINSTOR volume: the timer CronJobs, console-preflight and
+# the console. When a node dies, piraeus-ha-controller puts drbd.linbit.com/lost-quorum:NoSchedule
+# on every survivor whose replicated volumes lost quorum (9/25/26: node1 out, all five nodes
+# tainted for hours), and a pod that has to be rescheduled then sits Pending. The taint keeps pods
+# that mount a DRBD volume off a node that cannot serve it; a pod with no volume gains nothing
+# from it. One key, not a blanket toleration, so every other taint still holds.
+#
+# NOT applied to dispatchd or claude-keeper: both mount a LINSTOR PVC, and letting them onto a
+# tainted node would start them against a volume with no quorum. tests/test_lost_quorum_toleration.py
+# pins both directions.
+volumelessTolerations:
+  - key: drbd.linbit.com/lost-quorum
+    operator: Exists
+    effect: NoSchedule

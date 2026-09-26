@@ -1,0 +1,170 @@
+{{- if .Values.console.enabled }}
+# The board, served from the cluster (k8s-07). Off by default; k8s-10 is the story that
+# throws the switch and moves the public hostname off the VM's tunnel.
+#
+# Three refusals before anything renders, because the alternative to each one is a console
+# that comes up looking fine and is quietly broken in a way only Craig would find:
+#
+#   1. crswdAccess. console.py shells out to crswd-api for the session panel and to
+#      lawnmower-route for routing. crswd is on the VM and a pod reaches it only through the
+#      Cloudflare Access path k8s-05 wired. Without the mount the panel is empty and says
+#      nothing about why.
+#   2. dispatchUrl. The console's `dispatch` calls default to 127.0.0.1:8850, which is the VM
+#      and is nothing at all inside a pod. Either dispatchd.enabled computes the Service name
+#      (k8s-08) or an explicit URL is given. There is no loopback fallback on purpose.
+#   3. the HMAC secret. `dispatch` signs every request; without DISPATCH_SECRET it answers
+#      secret_unavailable and the board renders empty.
+#
+# NOT READY TO ENABLE, measured 9/22/26 by k8s-10 (ralph/plans/k8s-10/IMPLEMENTATION_PLAN.md).
+# The board is built from files VM processes write every few minutes: backlog.md (tasks-axi),
+# ~/.local/share/lawnmower/outcomes.jsonl (lm-report) and session-tokens.jsonl (routing). A
+# pod has none of them, and the image has no `dispatch` CLI, so console.py exits at startup.
+{{- if not .Values.crswdAccess.enabled }}
+{{- fail "console.enabled requires crswdAccess.enabled: a console pod cannot reach crswd on the VM without the Cloudflare Access credential (k8s-05), and a console with a silently empty session panel is worse than one that refuses to start" }}
+{{- end }}
+{{- $dispatchURL := .Values.console.dispatchUrl }}
+{{- if not $dispatchURL }}
+{{- if .Values.dispatchd.enabled }}
+{{- $dispatchURL = printf "http://%s-dispatchd:%v" (include "lawnmower.name" .) .Values.dispatchd.port }}
+{{- else }}
+{{- fail "console.enabled needs an inbox: set dispatchd.enabled (k8s-08) so the in-cluster Service name can be computed, or set console.dispatchUrl explicitly. It does not fall back to 127.0.0.1:8850, which is the VM's dispatchd and not reachable from a pod" }}
+{{- end }}
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lawnmower.name" . }}-console
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+    app.kubernetes.io/component: console
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.console.port }}
+      targetPort: http
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "lawnmower.name" . }}
+    app.kubernetes.io/component: console
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lawnmower.name" . }}-console
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+    app.kubernetes.io/component: console
+spec:
+  replicas: {{ .Values.console.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "lawnmower.name" . }}
+      app.kubernetes.io/component: console
+  template:
+    metadata:
+      labels:
+        {{- include "lawnmower.labels" . | nindent 8 }}
+        app.kubernetes.io/component: console
+    spec:
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.volumelessTolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # Same ServiceAccount the timer CronJobs use. console.py runs `kubectl -n lawnmower get
+      # jobs -l app=ralph` for the Ralph panel, which is exactly the batch/jobs get+list that
+      # templates/rbac.yaml already grants -- a second identity for the same read would be a
+      # second thing to keep in step.
+      serviceAccountName: {{ .Values.timers.serviceAccountName }}
+      # Load-bearing, not hardening boilerplate: the image runs as uid 10001 and a mounted
+      # Secret is owned by root:fsGroup. Without fsGroup the pod cannot read its own
+      # credentials -- measured on the first timer CronJob (see templates/timers.yaml).
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001}
+      initContainers:
+        # Clone here, not baked into the image. console.py, the loop/ scripts, crswd-api,
+        # lm-report and opp-axi are all private source and this image is PUBLIC on Docker Hub,
+        # so they cannot be in it. Same shape and same credential as the timer CronJobs.
+        - name: clone
+          image: "{{ .Values.console.image.registry }}/{{ .Values.console.image.repository }}:{{ .Values.console.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+              git -c credential.helper='!f(){ echo username=x-access-token; echo "password=$(cat "${GH_TOKEN_FILE}")"; };f' \
+                clone --depth 50 --branch "${BRANCH}" "https://github.com/${REPO_SLUG}.git" .
+          env:
+            - {name: REPO_SLUG,     value: {{ .Values.console.repo | quote }}}
+            - {name: BRANCH,        value: {{ .Values.console.branch | quote }}}
+            - {name: GH_TOKEN_FILE, value: "/var/run/ralph-git-token/token"}
+          workingDir: /workspace
+          volumeMounts:
+            - {name: workspace,       mountPath: /workspace}
+            - {name: ralph-git-token, mountPath: /var/run/ralph-git-token, readOnly: true}
+      containers:
+        - name: console
+          image: "{{ .Values.console.image.registry }}/{{ .Values.console.image.repository }}:{{ .Values.console.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          workingDir: /workspace
+          command: ["python3", "console/console.py"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.console.port }}
+          env:
+            - {name: CONSOLE_PORT, value: {{ .Values.console.port | quote }}}
+            # console.py binds loopback unless told otherwise, and the Service never reaches
+            # loopback. Without this the pod is Running, /healthz answers inside it, and every
+            # request through the Service is refused.
+            - {name: CONSOLE_BIND, value: "0.0.0.0"}
+            - {name: DISPATCH_URL, value: {{ $dispatchURL | quote }}}
+            - {name: CRSWD_URL,    value: {{ .Values.console.crswdUrl | quote }}}
+            - {name: CRSWD_ACCESS_DIR, value: {{ .Values.crswdAccess.mountPath | quote }}}
+            # NOT set, on purpose. console.py's kubectl calls inherit the environment, and a
+            # KUBECONFIG naming ~/.kube/rpi-inference.yaml is a host path that does not exist
+            # in this pod. Leaving it unset is what makes kubectl use the ServiceAccount --
+            # the same reason loop/ralph-token-refresh.sh explicitly unsets it in-cluster.
+            - name: DISPATCH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.dispatchd.existingSecret }}
+                  key: {{ .Values.dispatchd.secretKey }}
+          volumeMounts:
+            - {name: workspace,    mountPath: /workspace}
+            - {name: crswd-access, mountPath: {{ .Values.crswdAccess.mountPath | quote }}, readOnly: true}
+      volumes:
+        - {name: workspace, emptyDir: {}}
+        - {name: crswd-access, secret: {secretName: {{ .Values.crswdAccess.secretName | quote }}, defaultMode: 0440}}
+        - name: ralph-git-token
+          secret:
+            secretName: {{ if .Values.cloneToken.enabled }}{{ .Values.cloneToken.secretName | quote }}{{ else }}{{ .Values.timers.gitTokenSecret | quote }}{{ end }}
+            defaultMode: 0440
+---
+# The listener already exists on Gateway `lm` with a Ready cert and a Cloudflare Access gate,
+# and carried 0 routes until this one. sectionName must match a listener NAME in
+# cluster/30-gateway/gateway.yaml; tests/test_chart_console.py fails if the two drift apart.
+#
+# An HTTPRoute alone does not move the public hostname. lawnmower.craigcloud.io still resolves
+# through the VM's own cloudflared tunnel today (console/README.md) -- repointing it is k8s-10,
+# and until then this route is programmed and unreached.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "lawnmower.name" . }}-console
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+    app.kubernetes.io/component: console
+spec:
+  parentRefs:
+    - name: {{ .Values.console.httpRoute.gatewayName }}
+      namespace: {{ .Values.console.httpRoute.gatewayNamespace }}
+      sectionName: {{ .Values.console.httpRoute.sectionName }}
+  hostnames:
+    - {{ .Values.console.httpRoute.hostname | quote }}
+  rules:
+    - backendRefs:
+        - name: {{ include "lawnmower.name" . }}-console
+          port: {{ .Values.console.port }}
+{{- end }}

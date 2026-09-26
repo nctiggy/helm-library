@@ -1,0 +1,118 @@
+# The eight scheduled units that never start a model (k8s-06). One range over
+# .Values.timers.units instead of eight near-identical files -- see
+# ralph/plans/k8s-06/IMPLEMENTATION_PLAN.md's derivation table for where `schedule`,
+# `timeZone`, `persistent` and `deadline` each came from.
+#
+# concurrencyPolicy is DERIVED from `trigger`, not read from a stored field: a row whose
+# trigger is OnUnitActiveSec=<N>min ports a monotonic systemd timer, which re-arms only
+# after the previous run finishes and so can never overlap itself -- Forbid is the literal
+# translation of that property, not a hygiene default. An OnCalendar trigger is wall-clock
+# and CAN overlap under systemd too, so it gets Allow, same as systemd gives it.
+{{- range $key, $unit := .Values.timers.units }}
+{{- if $unit.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "lawnmower.name" $ }}-{{ $key }}
+  labels:
+    {{- include "lawnmower.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: timers-{{ $key }}
+spec:
+  schedule: {{ $unit.schedule | quote }}
+  {{- if $unit.timeZone }}
+  timeZone: {{ $unit.timeZone | quote }}
+  {{- end }}
+  concurrencyPolicy: {{ if hasPrefix "OnUnitActiveSec=" $unit.trigger }}Forbid{{ else }}Allow{{ end }}
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      {{- if $unit.deadline }}
+      activeDeadlineSeconds: {{ $unit.deadline }}
+      {{- end }}
+      template:
+        metadata:
+          labels:
+            {{- include "lawnmower.labels" $ | nindent 12 }}
+            app.kubernetes.io/component: timers-{{ $key }}
+        spec:
+          restartPolicy: Never
+          {{- with $.Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $.Values.volumelessTolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          serviceAccountName: {{ $.Values.timers.serviceAccountName }}
+          # Copied from ralph-runner/job.yaml, and load-bearing rather than hardening
+          # boilerplate. The image runs as uid 10001, and a mounted Secret is owned by
+          # root:fsGroup -- with no fsGroup the pod cannot read its own credential, which is
+          # exactly how the first run of this CronJob failed: "cat:
+          # /var/run/ralph-git-token/token: Permission denied", then the clone fell through to
+          # an anonymous fetch and GitHub refused it (measured 9/18/26).
+          securityContext: {runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001}
+          initContainers:
+            # Clone here, not baked into the image: the image is the toolchain, the
+            # volume is the work. Same shape as ralph-runner/job.yaml's own `clone` step
+            # -- a process-scoped `credential.helper` reading the MOUNTED SECRET FILE at
+            # use time, never a secretKeyRef env (a snapshot frozen at pod creation).
+            # `-c credential.helper=...` is never written to .git/config, so there is
+            # nothing to scrub afterward and no embedded-token URL left in the clone
+            # command for a later check to catch.
+            - name: clone
+              image: "{{ $.Values.timers.image.registry }}/{{ $.Values.timers.image.repository }}:{{ $.Values.timers.image.tag }}"
+              imagePullPolicy: {{ $.Values.image.pullPolicy }}
+              command: ["bash", "-lc"]
+              args:
+                - |
+                  set -euo pipefail
+                  git -c credential.helper='!f(){ echo username=x-access-token; echo "password=$(cat "${GH_TOKEN_FILE}")"; };f' \
+                    clone --depth 50 --branch "${BRANCH}" "https://github.com/${REPO_SLUG}.git" .
+              env:
+                - {name: REPO_SLUG,     value: {{ $.Values.timers.repo | quote }}}
+                - {name: BRANCH,        value: {{ $.Values.timers.branch | quote }}}
+                - {name: GH_TOKEN_FILE, value: "/var/run/ralph-git-token/token"}
+              workingDir: /workspace
+              volumeMounts:
+                - {name: workspace,       mountPath: /workspace}
+                - {name: ralph-git-token, mountPath: /var/run/ralph-git-token, readOnly: true}
+          containers:
+            - name: {{ $key }}
+              image: "{{ $.Values.timers.image.registry }}/{{ $.Values.timers.image.repository }}:{{ $.Values.timers.image.tag }}"
+              imagePullPolicy: {{ $.Values.image.pullPolicy }}
+              workingDir: /workspace
+              command: ["bash", "-lc"]
+              args:
+                - |
+                  set -euo pipefail
+                  {{- range $cmd := $unit.command }}
+                  {{ $cmd }}
+                  {{- end }}
+              {{- if and $unit.needsAppCreds $.Values.appCreds.enabled }}
+              # Read as mounted FILES, never a secretKeyRef env: the same reason
+              # ralph-runner/job.yaml gives for the git token. An env var is a snapshot
+              # frozen at pod creation; a file is re-read at use time, so an ESO refresh
+              # reaches a running pod.
+              env:
+                - {name: RALPH_APP_CREDS_DIR, value: {{ $.Values.appCreds.mountPath | quote }}}
+              {{- end }}
+              volumeMounts:
+                - {name: workspace, mountPath: /workspace}
+                {{- if and $unit.needsAppCreds $.Values.appCreds.enabled }}
+                - {name: app-creds, mountPath: {{ $.Values.appCreds.mountPath | quote }}, readOnly: true}
+                {{- end }}
+          volumes:
+            - {name: workspace, emptyDir: {}}
+            {{- if and $unit.needsAppCreds $.Values.appCreds.enabled }}
+            - {name: app-creds, secret: {secretName: {{ $.Values.appCreds.secretName | quote }}, defaultMode: 0440}}
+            {{- end }}
+            # Clone with the read-only clone token when it is synced, and only fall back
+            # to the App-minted ralph-git when it is not. See values.yaml cloneToken.
+            - name: ralph-git-token
+              secret:
+                secretName: {{ if $.Values.cloneToken.enabled }}{{ $.Values.cloneToken.secretName | quote }}{{ else }}{{ $.Values.timers.gitTokenSecret | quote }}{{ end }}
+                defaultMode: 0440
+{{- end }}
+{{- end }}

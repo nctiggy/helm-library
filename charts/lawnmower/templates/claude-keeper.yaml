@@ -1,0 +1,172 @@
+{{- if .Values.claudeKeeper.enabled }}
+{{- $k := .Values.claudeKeeper }}
+# k8s-14: the one owner of the cluster's Claude login. loop/claude-login-keeper.py has the
+# design; this file is the identity, the lock, the backup and the schedule it runs with.
+#
+# Its own ServiceAccount, never the timers' lawnmower-ralph-jobs: that identity is shared by
+# every timer, and the whole point of the split is that nothing but the keeper can read the
+# refresh token. crswd's Kubernetes-native mode (k8s-19) adopts this by mounting
+# claudeKeeper.sessionSecret the way ralph-runner/job.yaml does -- it never needs this SA.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $k.serviceAccountName }}
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+    app.kubernetes.io/component: claude-keeper
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $k.serviceAccountName }}
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+    app.kubernetes.io/component: claude-keeper
+rules:
+  # get + update on two named Secrets, nothing else. No create: loop/claude-keeper-login.sh
+  # creates them with a human's kubeconfig, once. No list/watch: a resourceNames rule cannot
+  # restrict either, so granting one would grant every Secret in the namespace.
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: [{{ $k.keeperSecret | quote }}, {{ $k.sessionSecret | quote }}]
+    verbs: ["get", "update"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: [{{ $k.lease | quote }}]
+    verbs: ["get", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $k.serviceAccountName }}
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+    app.kubernetes.io/component: claude-keeper
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $k.serviceAccountName }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ $k.serviceAccountName }}
+    namespace: {{ .Release.Namespace }}
+---
+# The lock. concurrencyPolicy: Forbid covers the CronJob overlapping itself; this covers a
+# manual run or the --login pod starting beside it. `spec` is left empty so a helm upgrade
+# never resets the holder the keeper wrote.
+apiVersion: coordination.k8s.io/v1
+kind: Lease
+metadata:
+  name: {{ $k.lease }}
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+    app.kubernetes.io/component: claude-keeper
+spec: {}
+---
+# The backup a failed Secret write-back is recovered from. `keep`: uninstalling the chart
+# must not delete the only other copy of a just-rotated login.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $k.backupClaim }}
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+    app.kubernetes.io/component: claude-keeper
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ $k.backupStorageClass | quote }}
+  resources:
+    requests:
+      storage: {{ $k.backupSize | quote }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "lawnmower.name" . }}-claude-keeper
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+    app.kubernetes.io/component: claude-keeper
+spec:
+  schedule: {{ $k.schedule | quote }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: {{ $k.deadlineSeconds }}
+      template:
+        metadata:
+          labels:
+            {{- include "lawnmower.labels" . | nindent 12 }}
+            app.kubernetes.io/component: claude-keeper
+        spec:
+          restartPolicy: Never
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          serviceAccountName: {{ $k.serviceAccountName }}
+          # Same uid and fsGroup as templates/timers.yaml, for the same measured reason: a
+          # mounted Secret and a fresh PVC are only writable/readable through fsGroup.
+          securityContext: {runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001}
+          initContainers:
+            # Same clone as templates/timers.yaml: the keeper script comes from this repo
+            # at run time, not from the image.
+            - name: clone
+              image: "{{ .Values.timers.image.registry }}/{{ .Values.timers.image.repository }}:{{ .Values.timers.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command: ["bash", "-lc"]
+              args:
+                - |
+                  set -euo pipefail
+                  git -c credential.helper='!f(){ echo username=x-access-token; echo "password=$(cat "${GH_TOKEN_FILE}")"; };f' \
+                    clone --depth 50 --branch "${BRANCH}" "https://github.com/${REPO_SLUG}.git" .
+              env:
+                - {name: REPO_SLUG,     value: {{ .Values.timers.repo | quote }}}
+                - {name: BRANCH,        value: {{ .Values.timers.branch | quote }}}
+                - {name: GH_TOKEN_FILE, value: "/var/run/ralph-git-token/token"}
+              workingDir: /workspace
+              volumeMounts:
+                - {name: workspace,       mountPath: /workspace}
+                - {name: ralph-git-token, mountPath: /var/run/ralph-git-token, readOnly: true}
+          containers:
+            - name: keeper
+              image: "{{ .Values.timers.image.registry }}/{{ .Values.timers.image.repository }}:{{ .Values.timers.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              workingDir: /workspace
+              command: ["python3", "loop/claude-login-keeper.py"]
+              env:
+                - name: POD_NAME
+                  valueFrom: {fieldRef: {fieldPath: metadata.name}}
+                - {name: HOME,                          value: "/home/ralph"}
+                - {name: CLAUDE_CONFIG_DIR,             value: "/home/ralph/.claude"}
+                - {name: KEEPER_NAMESPACE,              value: {{ .Release.Namespace | quote }}}
+                - {name: KEEPER_SECRET,                 value: {{ $k.keeperSecret | quote }}}
+                - {name: SESSION_SECRET,                value: {{ $k.sessionSecret | quote }}}
+                - {name: KEEPER_LEASE,                  value: {{ $k.lease | quote }}}
+                - {name: KEEPER_BACKUP_DIR,             value: "/var/lib/claude-keeper"}
+                - {name: KEEPER_REFRESH_BELOW_SECONDS,  value: {{ $k.refreshBelowSeconds | quote }}}
+                - {name: KEEPER_MODEL,                  value: {{ $k.model | quote }}}
+              volumeMounts:
+                - {name: workspace,   mountPath: /workspace}
+                # The keeper's PRIVATE copy lives here and dies with the pod. It is never
+                # the Secret's mount: the keeper reads and writes the Secret through the API.
+                - {name: claude-home, mountPath: /home/ralph/.claude}
+                - {name: backup,      mountPath: /var/lib/claude-keeper}
+              resources:
+                requests: {cpu: 100m, memory: 256Mi}
+                limits:   {memory: 1Gi}
+          volumes:
+            - {name: workspace,   emptyDir: {}}
+            - {name: claude-home, emptyDir: {sizeLimit: 64Mi}}
+            - name: backup
+              persistentVolumeClaim: {claimName: {{ $k.backupClaim | quote }}}
+            - name: ralph-git-token
+              secret:
+                secretName: {{ if .Values.cloneToken.enabled }}{{ .Values.cloneToken.secretName | quote }}{{ else }}{{ .Values.timers.gitTokenSecret | quote }}{{ end }}
+                defaultMode: 0440
+{{- end }}

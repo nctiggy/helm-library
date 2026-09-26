@@ -1,0 +1,93 @@
+{{- if and .Values.console.enabled .Values.console.preflight.enabled }}
+# The deploy gate (k8s-07). AGENTS.md, from Craig on 8/27/26: "I am super disappointed in how
+# much is broken when it gets to me." A 200 is not usable. loop/preflight.sh walks the paths he
+# actually takes -- every page, no dead ends, the interview flow, byte-range audio, page load
+# under 0.3s -- and on the VM it is wired into install.sh --restart so a deploy is not finished
+# until it passes. This is that same gate for a rollout.
+#
+# hook-failed is NOT in the delete policy, deliberately. A failed gate leaves its pod and its
+# logs behind to be read; only the passing runs are cleaned up.
+#
+# preflight's section 10 drives a headless Chromium and REFUSES (counts a failure) rather than
+# skipping when Chromium or node is missing -- "a green preflight has to mean this actually
+# ran". k8s-21 put Chromium in the -chrome1 tag, and the image sets its path, which is
+# why console.image pins it. Sections 8-8f skip in a pod: they gate on `dispatch` and
+# crswd-api being on PATH, and neither is (k8s-10's notebook has the full list).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "lawnmower.name" . }}-console-preflight
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+    app.kubernetes.io/component: console-preflight
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: {{ .Values.console.preflight.deadline }}
+  template:
+    metadata:
+      labels:
+        {{- include "lawnmower.labels" . | nindent 8 }}
+        app.kubernetes.io/component: console-preflight
+    spec:
+      restartPolicy: Never
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.volumelessTolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.timers.serviceAccountName }}
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001}
+      initContainers:
+        - name: clone
+          image: "{{ .Values.console.image.registry }}/{{ .Values.console.image.repository }}:{{ .Values.console.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+              git -c credential.helper='!f(){ echo username=x-access-token; echo "password=$(cat "${GH_TOKEN_FILE}")"; };f' \
+                clone --depth 50 --branch "${BRANCH}" "https://github.com/${REPO_SLUG}.git" .
+          env:
+            - {name: REPO_SLUG,     value: {{ .Values.console.repo | quote }}}
+            - {name: BRANCH,        value: {{ .Values.console.branch | quote }}}
+            - {name: GH_TOKEN_FILE, value: "/var/run/ralph-git-token/token"}
+          workingDir: /workspace
+          volumeMounts:
+            - {name: workspace,       mountPath: /workspace}
+            - {name: ralph-git-token, mountPath: /var/run/ralph-git-token, readOnly: true}
+      containers:
+        - name: preflight
+          image: "{{ .Values.console.image.registry }}/{{ .Values.console.image.repository }}:{{ .Values.console.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          workingDir: /workspace
+          command: ["bash", "-lc"]
+          args: ["loop/preflight.sh"]
+          env:
+            # The Service, not loopback. preflight.sh takes CONSOLE_HOST for exactly this
+            # caller and defaults to 127.0.0.1 for every other one.
+            - {name: CONSOLE_HOST, value: "{{ include "lawnmower.name" . }}-console"}
+            - {name: CONSOLE_PORT, value: {{ .Values.console.port | quote }}}
+            # preflight drives `dispatch` in its own section 8, and `dispatch` signs every
+            # request. Without this it answers secret_unavailable and the check fails for a
+            # reason that has nothing to do with the console.
+            - name: DISPATCH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.dispatchd.existingSecret }}
+                  key: {{ .Values.dispatchd.secretKey }}
+          volumeMounts:
+            - {name: workspace, mountPath: /workspace}
+      volumes:
+        - {name: workspace, emptyDir: {}}
+        - name: ralph-git-token
+          secret:
+            secretName: {{ if .Values.cloneToken.enabled }}{{ .Values.cloneToken.secretName | quote }}{{ else }}{{ .Values.timers.gitTokenSecret | quote }}{{ end }}
+            defaultMode: 0440
+{{- end }}

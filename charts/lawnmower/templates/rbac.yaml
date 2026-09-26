@@ -1,0 +1,58 @@
+{{- if .Values.rbac.enabled }}
+# The identity the timer CronJobs run as (k8s-06 asked for this; k8s-09 needs it to be real).
+#
+# values.yaml has claimed since k8s-06 that "templates/rbac.yaml renders the Role/RoleBinding
+# only when this is true", and the file did not exist -- so `rbac.enabled=true` rendered
+# nothing while every CronJob still named `serviceAccountName: lawnmower-ralph-jobs`. A pod
+# with a ServiceAccount nothing creates does not start, and the toggle reported success. That
+# is lm-chart-rbac-toggle-renders-nothing.
+#
+# Namespaced Role, never ClusterRole. The only timer that touches the API is
+# ralph-token-refresh, and everything it does is in this namespace.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.rbac.serviceAccountName }}
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Values.rbac.serviceAccountName }}
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+rules:
+  # loop/ralph-token-refresh.sh decides whether to do anything at all by listing Jobs:
+  # "found N active app=ralph Job(s) ... refreshing ralph-git". No Jobs, no mint.
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list"]
+  # The same script writes the minted token with a SERVER-SIDE apply, which needs patch on
+  # the object and create for the first write. resourceNames pins it to the one Secret --
+  # without that, this Role could read every Secret in the namespace, including the Claude
+  # credential. `list` and `watch` are deliberately absent: a resourceNames Role cannot
+  # restrict them, so granting either would grant the whole namespace.
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: [{{ .Values.timers.gitTokenSecret | quote }}]
+    verbs: ["get", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.rbac.serviceAccountName }}
+  labels:
+    {{- include "lawnmower.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Values.rbac.serviceAccountName }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.rbac.serviceAccountName }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

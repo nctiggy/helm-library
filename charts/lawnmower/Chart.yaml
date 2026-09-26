@@ -1,0 +1,10 @@
+apiVersion: v2
+name: lawnmower
+description: Craig's AI operations platform, as it moves off the VM and into the cluster
+type: application
+# 0.x on purpose: this chart deploys ONE of Lawnmower's components today. It reaches 1.0
+# when the VM can be switched off, which is gated on crswd (lm-41) being redesigned
+# rather than ported.
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/craig-ai-tooling/ai-lawnmower

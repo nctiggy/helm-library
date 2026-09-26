@@ -1,0 +1,136 @@
+{{- if .Values.dispatchd.enabled }}
+{{- if .Values.dispatchd.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "lawnmower.name" . }}-dispatchd
+  labels: {{- include "lawnmower.labels" . | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.dispatchd.persistence.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.dispatchd.persistence.size }}
+---
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lawnmower.name" . }}-dispatchd
+  labels: {{- include "lawnmower.labels" . | nindent 4 }}
+spec:
+  # ClusterIP, and nothing plaintext routes to it from outside. dispatchd authenticates
+  # with HMAC, which proves who sent a request and does NOT encrypt it — which is exactly
+  # why its systemd unit binds loopback and refuses anything else without
+  # --insecure-transport. The cluster-internal equivalent of loopback is a Service nothing
+  # routes to from outside, with one exception since 9/24/26: the LAN-only HTTPRoute
+  # cluster/40-apps/dispatch-route.yaml, which terminates TLS at Traefik and carries no
+  # public DNS record. The admin listener (8788) stays on loopback and is not routed.
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.dispatchd.port }}
+      targetPort: http
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "lawnmower.name" . }}
+    app.kubernetes.io/component: dispatchd
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lawnmower.name" . }}-dispatchd
+  labels: {{- include "lawnmower.labels" . | nindent 4 }}
+spec:
+  # ONE replica, and this is not a placeholder to raise later. The inbox is a single
+  # SQLite file on a ReadWriteOnce volume: two replicas would either fail to schedule or,
+  # worse, both open the same file. Scaling this needs a different store, not a bigger
+  # number here.
+  replicas: 1
+  strategy:
+    # Recreate, not RollingUpdate: a rolling update would try to start the new pod while
+    # the old one still holds the volume, and RWO means it never gets it. A moment of
+    # downtime on an inbox nobody is watching beats a deploy that hangs.
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "lawnmower.name" . }}
+      app.kubernetes.io/component: dispatchd
+  template:
+    metadata:
+      labels:
+        {{- include "lawnmower.labels" . | nindent 8 }}
+        app.kubernetes.io/component: dispatchd
+    spec:
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: dispatchd
+          image: "{{ .Values.dispatchd.image.registry | default .Values.image.registry }}/{{ .Values.dispatchd.image.repository }}:{{ .Values.dispatchd.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # dispatchd refuses a non-loopback --addr without this flag and exits at start, and
+          # a pod has to bind 0.0.0.0 for its Service to reach it. The Service comment above
+          # is why that is safe here: ClusterIP, TLS ends at Traefik. Missing until k8s-08, 9/22/26 --
+          # the template had never been installed.
+          args: ["--insecure-transport"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.dispatchd.port }}
+          env:
+            - name: DISPATCH_ADDR
+              value: "0.0.0.0:{{ .Values.dispatchd.port }}"
+            # A directory BELOW the mount, not the mount itself. The store chmods the DB's
+            # directory to 0700 on every start, and the volume root belongs to root (fsGroup
+            # only grants the group), so /data/inbox.db crash-looped on "chmod /data:
+            # operation not permitted" (k8s-08, 9/22/26). dispatchd creates and owns this one.
+            - name: DISPATCH_DB
+              value: /data/dispatch/inbox.db
+            # From a Secret, never a value. restore-secrets.sh creates it; the chart
+            # only names it, so the credential is not in git and not in `helm get values`.
+            - name: DISPATCH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.dispatchd.existingSecret }}
+                  key: {{ .Values.dispatchd.secretKey }}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            # Deliberately slacker than readiness. A liveness probe that fires during a
+            # slow query restarts the process holding the only writable copy of the
+            # inbox, which is a worse outcome than a slow response.
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            failureThreshold: 5
+          resources:
+            requests: {cpu: 25m, memory: 64Mi}
+            limits: {memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+            # SQLite spills sorts and temp tables to a temp dir, and the root filesystem is
+            # read-only on a scratch image with no /tmp at all.
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: data
+        {{- if .Values.dispatchd.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "lawnmower.name" . }}-dispatchd
+        {{- else }}
+          # An inbox that forgets on restart is worse than no inbox, because it looks
+          # like it works. Only for a throwaway test install.
+          emptyDir: {}
+        {{- end }}
+{{- end }}
