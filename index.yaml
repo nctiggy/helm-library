@@ -357,6 +357,19 @@ entries:
     urls:
     - https://nctiggy.github.io/helm-library/keysight-telemetry-0.1.0.tgz
     version: 0.1.0
+  lawnmower:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-09-26T03:45:10.878574717Z"
+    description: Craig's AI operations platform, as it moves off the VM and into the
+      cluster
+    digest: b2f4abe4ea2c644556cb061e089cdce6af66e38bb45d0cdec607bb9ad122f6ad
+    home: https://github.com/craig-ai-tooling/ai-lawnmower
+    name: lawnmower
+    type: application
+    urls:
+    - https://github.com/nctiggy/helm-library/releases/download/lawnmower-0.1.0/lawnmower-0.1.0.tgz
+    version: 0.1.0
   onepassword-connect:
   - apiVersion: v2
     appVersion: 1.8.2
@@ -441,4 +454,4 @@ entries:
     urls:
     - https://github.com/nctiggy/helm-library/releases/download/wwt-custom-app-2.0.0/wwt-custom-app-2.0.0.tgz
     version: 2.0.0
-generated: "2026-09-22T18:18:02.059996903Z"
+generated: "2026-09-26T03:45:10.878604453Z"
